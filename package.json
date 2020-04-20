@@ -13,7 +13,11 @@
   "author": "Deniz Gurkaynak <dgurkaynak@gmail.com>",
   "license": "MIT",
   "devDependencies": {
+    "@types/chance": "^1.0.10",
+    "@types/lodash": "^4.14.149",
+    "chance": "^1.1.4",
     "html-webpack-plugin": "^4.2.0",
+    "lodash": "^4.17.15",
     "prettier": "^2.0.4",
     "ts-loader": "^7.0.0",
     "typescript": "^3.8.3",
