@@ -2,11 +2,13 @@ import * as Chance from 'chance';
 import camelCase from 'lodash/camelCase';
 import debug from 'debug';
 
-const MIN_MESSAGE_DELAY = 1000;
-const MAX_MESSAGE_DELAY = 1500;
-const RPC_TIMEOUT = 5000;
-const ELECTION_TIMEOUT = 10000;
-const BATCH_SIZE = 1;
+export const MIN_MESSAGE_DELAY = 1000;
+export const MAX_MESSAGE_DELAY = 1500;
+export const RPC_TIMEOUT = 5000;
+export const MIN_ELECTION_TIMEOUT = 10000;
+export const MAX_ELECTION_TIMEOUT = 10000;
+export const HEARTBEAT_INTERVAL = 3000;
+export const BATCH_SIZE = 1;
 
 const chance = new Chance();
 
@@ -170,7 +172,9 @@ export class RaftServer {
 
   private reloadElectionTimeout() {
     clearTimeout(this.electionTimeoutId);
-    const delay = (Math.random() + 1) * ELECTION_TIMEOUT;
+    const delay =
+      MIN_ELECTION_TIMEOUT +
+      Math.random() * (MAX_ELECTION_TIMEOUT - MIN_ELECTION_TIMEOUT);
     this.electionTimeoutId = setTimeout(
       () => this.handleElectionTimeout(),
       delay
@@ -244,10 +248,15 @@ export class RaftServer {
 
   // Can be in 3 states
   private handleRequestVoteMessage(message: RequestVoteMessage) {
-    this.debug(`Recieved ${message.type} message from ${message.from}`, message);
+    this.debug(
+      `Recieved ${message.type} message from ${message.from}`,
+      message
+    );
 
     if (this.term < message.term) {
-      this.debug(`Incoming term (${message.term}) is higher than my term (${this.term}), stepping down`);
+      this.debug(
+        `Incoming term (${message.term}) is higher than my term (${this.term}), stepping down`
+      );
       this.stepDown(message.term);
     }
 
@@ -280,10 +289,15 @@ export class RaftServer {
 
   // Can be in 3 states
   private handleRequestVoteResponse(message: RequestVoteResponseMessage) {
-    this.debug(`Recieved ${message.type} message from ${message.from}`, message);
+    this.debug(
+      `Recieved ${message.type} message from ${message.from}`,
+      message
+    );
 
     if (this.term < message.term) {
-      this.debug(`Incoming term (${message.term}) is higher than my term (${this.term}), stepping down`);
+      this.debug(
+        `Incoming term (${message.term}) is higher than my term (${this.term}), stepping down`
+      );
       this.stepDown(message.term);
     }
 
@@ -338,10 +352,15 @@ export class RaftServer {
     let success = false;
     let matchIndex = 0;
 
-    this.debug(`Recieved ${message.type} message from ${message.from}`, message);
+    this.debug(
+      `Recieved ${message.type} message from ${message.from}`,
+      message
+    );
 
     if (this.term < message.term) {
-      this.debug(`Incoming term (${message.term}) is higher than my term (${this.term}), stepping down`);
+      this.debug(
+        `Incoming term (${message.term}) is higher than my term (${this.term}), stepping down`
+      );
       this.stepDown(message.term);
     }
 
@@ -377,7 +396,7 @@ export class RaftServer {
     }
 
     const response: AppendEntriesResponseMessage = {
-      id: generateMessageId(),
+      id: message.id,
       from: this.id,
       to: message.from,
       term: this.term,
@@ -390,10 +409,15 @@ export class RaftServer {
 
   // Can be in 3 states
   private handleAppendEntriesResponse(message: AppendEntriesResponseMessage) {
-    this.debug(`Recieved ${message.type} message from ${message.from}`, message);
+    this.debug(
+      `Recieved ${message.type} message from ${message.from}`,
+      message
+    );
 
     if (this.term < message.term) {
-      this.debug(`Incoming term (${message.term}) is higher than my term (${this.term}), stepping down`);
+      this.debug(
+        `Incoming term (${message.term}) is higher than my term (${this.term}), stepping down`
+      );
       this.stepDown(message.term);
     }
 
@@ -420,7 +444,7 @@ export class RaftServer {
         clearTimeout(peer.heartbeatTimeoutId);
         peer.heartbeatTimeoutId = setTimeout(
           () => this.handleHeartbeatTimeout(peerId),
-          ELECTION_TIMEOUT / 2
+          HEARTBEAT_INTERVAL
         ) as any;
       }
     }
@@ -442,6 +466,9 @@ export class RaftServer {
     ) {
       return;
     }
+
+    // Maybe new term has began (election timeout). If so, we don't want to retry again
+    if (message.term != this.term) return;
 
     // If we couldn't send RequestVote message, and we're
     // still candidate, try again
