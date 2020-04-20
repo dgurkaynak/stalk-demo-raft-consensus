@@ -1,5 +1,6 @@
 import * as Chance from 'chance';
 import camelCase from 'lodash/camelCase';
+import debug from 'debug';
 
 const MIN_MESSAGE_DELAY = 1000;
 const MAX_MESSAGE_DELAY = 1500;
@@ -92,6 +93,15 @@ export class RaftServer {
   private rpcTimeoutIds: { [key: string]: number } = {};
   private electionTimeoutId: number;
 
+  /**
+   * If you want to see debug messages:
+   *
+   * ```js
+   * localStorage.debug = 'raft:*'
+   * ```
+   */
+  private debug = debug(`raft:server:${this.id}`);
+
   init(options: { peerServers: RaftServer[] }) {
     const peersMap = new Map<string, ServerPeer>();
     options.peerServers.forEach((server) => {
@@ -114,6 +124,8 @@ export class RaftServer {
       MIN_MESSAGE_DELAY +
       Math.random() * (MAX_MESSAGE_DELAY - MIN_MESSAGE_DELAY);
     setTimeout(() => peer.server.handleMessage(message), delay);
+
+    this.debug(`Sending ${message.type} message to ${message.to}`, message);
 
     if (timeout > 0) {
       this.rpcTimeoutIds[message.id] = setTimeout(() => {
@@ -179,6 +191,8 @@ export class RaftServer {
       this.state == RaftServerState.CANDIDATE ||
       this.state == RaftServerState.FOLLOWER
     ) {
+      this.debug(`Election timeout, starting a new one...`);
+
       // Starting new election
       this.reloadElectionTimeout();
       this.term += 1;
@@ -230,7 +244,10 @@ export class RaftServer {
 
   // Can be in 3 states
   private handleRequestVoteMessage(message: RequestVoteMessage) {
+    this.debug(`Recieved ${message.type} message from ${message.from}`, message);
+
     if (this.term < message.term) {
+      this.debug(`Incoming term (${message.term}) is higher than my term (${this.term}), stepping down`);
       this.stepDown(message.term);
     }
 
@@ -246,6 +263,8 @@ export class RaftServer {
       granted = true;
       this.votedFor = message.from;
       this.reloadElectionTimeout();
+
+      this.debug(`Voted for ${message.from}`);
     }
 
     const response: RequestVoteResponseMessage = {
@@ -261,7 +280,10 @@ export class RaftServer {
 
   // Can be in 3 states
   private handleRequestVoteResponse(message: RequestVoteResponseMessage) {
+    this.debug(`Recieved ${message.type} message from ${message.from}`, message);
+
     if (this.term < message.term) {
+      this.debug(`Incoming term (${message.term}) is higher than my term (${this.term}), stepping down`);
       this.stepDown(message.term);
     }
 
@@ -277,6 +299,7 @@ export class RaftServer {
       });
 
       if (grantedVotes >= quorum) {
+        this.debug('Became LEADER');
         this._state = RaftServerState.LEADER;
         this.peers.forEach((peer, peerId) => {
           peer.nextIndex = this.log.length + 1;
@@ -315,7 +338,10 @@ export class RaftServer {
     let success = false;
     let matchIndex = 0;
 
+    this.debug(`Recieved ${message.type} message from ${message.from}`, message);
+
     if (this.term < message.term) {
+      this.debug(`Incoming term (${message.term}) is higher than my term (${this.term}), stepping down`);
       this.stepDown(message.term);
     }
 
@@ -364,7 +390,10 @@ export class RaftServer {
 
   // Can be in 3 states
   private handleAppendEntriesResponse(message: AppendEntriesResponseMessage) {
+    this.debug(`Recieved ${message.type} message from ${message.from}`, message);
+
     if (this.term < message.term) {
+      this.debug(`Incoming term (${message.term}) is higher than my term (${this.term}), stepping down`);
       this.stepDown(message.term);
     }
 
@@ -399,6 +428,8 @@ export class RaftServer {
 
   // Can be in 4 states
   private handleMessageTimeout(message: RaftMessage) {
+    this.debug(`Message timeout`, message);
+
     if (this._state == RaftServerState.STOPPED) {
       return;
     }
@@ -418,6 +449,7 @@ export class RaftServer {
       message.type == 'RequestVote' &&
       this._state == RaftServerState.CANDIDATE
     ) {
+      // this.debug(`Timeout for sending ${message.type} message to ${message.to}, retrying...`, message);
       this.sendRequestVoteMessage(message.to);
       return;
     }
@@ -428,6 +460,7 @@ export class RaftServer {
       message.type == 'AppendEntries' &&
       this._state == RaftServerState.LEADER
     ) {
+      // this.debug(`Timeout for sending ${message.type} message to ${message.to}, retrying...`, message);
       this.sendAppendEntriesMessage(message.to);
       return;
     }

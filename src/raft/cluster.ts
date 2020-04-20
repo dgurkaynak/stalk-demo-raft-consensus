@@ -18,4 +18,8 @@ export class RaftCluster {
       });
     });
   }
+
+  start() {
+    this.servers.forEach(s => s.start());
+  }
 }
