@@ -1,6 +1,7 @@
 import * as Chance from 'chance';
 import camelCase from 'lodash/camelCase';
 import debug from 'debug';
+import { EventEmitter } from 'events';
 
 export const MIN_MESSAGE_DELAY = 1000;
 export const MAX_MESSAGE_DELAY = 1500;
@@ -17,6 +18,20 @@ export enum RaftServerState {
   CANDIDATE = 'candidate',
   LEADER = 'leader',
   STOPPED = 'stopped',
+}
+
+export enum RaftServerEvents {
+  SENT_MESSAGE = 'sent message',
+  CLEARED_ELECTION_TIMEOUT = 'cleared election timeout',
+  SET_ELECTION_TIMEOUT = 'set election timeout',
+  STARTED_NEW_ELECTION = 'started new election',
+  STEPPED_DOWN = 'stepped down',
+  VOTED = 'voted',
+  RECIEVED_VOTE = 'recieved vote',
+  BECAME_LEADER = 'became leader',
+  RECIEVED_APPEND_ENTRIES = 'recieved append entries',
+  STARTED = 'started',
+  STOPPED = 'stopped'
 }
 
 export interface RaftLogItem {
@@ -81,6 +96,7 @@ export interface ServerPeer {
 
 export class RaftServer {
   readonly id = camelCase(chance.first());
+  readonly ee = new EventEmitter();
 
   state = RaftServerState.STOPPED;
   term = 1;
@@ -125,6 +141,7 @@ export class RaftServer {
     setTimeout(() => peer.server.handleMessage(message), delay);
 
     this.debug(`Sending ${message.type} message to ${message.to}`, message);
+    this.ee.emit(RaftServerEvents.SENT_MESSAGE, { message, delay });
 
     if (timeout > 0) {
       this.rpcTimeoutIds[message.id] = setTimeout(() => {
@@ -165,6 +182,8 @@ export class RaftServer {
   private clearElectionTimeout() {
     clearTimeout(this.electionTimeoutId);
     this.electionTimeoutId = null;
+
+    this.ee.emit(RaftServerEvents.CLEARED_ELECTION_TIMEOUT);
   }
 
   private reloadElectionTimeout() {
@@ -176,6 +195,8 @@ export class RaftServer {
       () => this.handleElectionTimeout(),
       delay
     ) as any;
+
+    this.ee.emit(RaftServerEvents.SET_ELECTION_TIMEOUT, { delay });
   }
 
   // Can be in 4 states
@@ -206,6 +227,8 @@ export class RaftServer {
         peer.nextIndex = 1;
       });
 
+      this.ee.emit(RaftServerEvents.STARTED_NEW_ELECTION);
+
       // We're updating `term` and `peers.matchIndex`
       // we're sure that we're not leader, but just in case
       // this.advanceCommitIndex();
@@ -224,6 +247,8 @@ export class RaftServer {
     this.term = term;
     this.votedFor = null;
     this.reloadElectionTimeout();
+
+    this.ee.emit(RaftServerEvents.STEPPED_DOWN);
 
     // We're updating `term`
     // we're sure that we're not leader, but just in case
@@ -270,6 +295,8 @@ export class RaftServer {
       this.votedFor = message.from;
       this.reloadElectionTimeout();
 
+      this.ee.emit(RaftServerEvents.VOTED);
+
       this.debug(`Voted for ${message.from}`);
     }
 
@@ -302,6 +329,8 @@ export class RaftServer {
       const peer = this.peers.get(message.from);
       peer.voteGranted = message.granted;
 
+      this.ee.emit(RaftServerEvents.RECIEVED_VOTE);
+
       // Check if we're leader now
       const quorum = Math.ceil((this.peers.size + 1) / 2);
       let grantedVotes = 1;
@@ -318,6 +347,8 @@ export class RaftServer {
         });
 
         this.clearElectionTimeout();
+
+        this.ee.emit(RaftServerEvents.BECAME_LEADER);
       }
     }
   }
@@ -390,6 +421,8 @@ export class RaftServer {
         matchIndex = index;
         this.commitIndex = Math.max(this.commitIndex, message.commitIndex);
       }
+
+      this.ee.emit(RaftServerEvents.RECIEVED_APPEND_ENTRIES);
     }
 
     const response: AppendEntriesResponseMessage = {
@@ -534,11 +567,15 @@ export class RaftServer {
     this.peers.forEach((peer) => {
       clearTimeout(peer.heartbeatTimeoutId);
     });
+
+    this.ee.emit(RaftServerEvents.STOPPED);
   }
 
   start() {
     this.state = RaftServerState.FOLLOWER;
     this.reloadElectionTimeout();
+
+    this.ee.emit(RaftServerEvents.STARTED);
   }
 
   request() {
