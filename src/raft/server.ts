@@ -82,16 +82,13 @@ export interface ServerPeer {
 export class RaftServer {
   readonly id = camelCase(chance.first());
 
-  private _state = RaftServerState.STOPPED;
-  get state() {
-    return this._state;
-  }
+  state = RaftServerState.STOPPED;
+  term = 1;
+  votedFor: string;
+  log: RaftLogItem[] = [];
+  commitIndex = 0;
+  peers = new Map<string, ServerPeer>();
 
-  private term = 1;
-  private votedFor: string;
-  private log: RaftLogItem[] = [];
-  private commitIndex = 0;
-  private peers = new Map<string, ServerPeer>();
   private rpcTimeoutIds: { [key: string]: number } = {};
   private electionTimeoutId: number;
 
@@ -142,7 +139,7 @@ export class RaftServer {
     clearTimeout(this.rpcTimeoutIds[message.id]);
     delete this.rpcTimeoutIds[message.id];
 
-    if (this._state == RaftServerState.STOPPED) {
+    if (this.state == RaftServerState.STOPPED) {
       return;
     }
 
@@ -201,7 +198,7 @@ export class RaftServer {
       this.reloadElectionTimeout();
       this.term += 1;
       this.votedFor = this.id;
-      this._state = RaftServerState.CANDIDATE;
+      this.state = RaftServerState.CANDIDATE;
 
       this.peers.forEach((peer) => {
         peer.voteGranted = false;
@@ -223,7 +220,7 @@ export class RaftServer {
   }
 
   private stepDown(term: number) {
-    this._state = RaftServerState.FOLLOWER;
+    this.state = RaftServerState.FOLLOWER;
     this.term = term;
     this.votedFor = null;
     this.reloadElectionTimeout();
@@ -314,7 +311,7 @@ export class RaftServer {
 
       if (grantedVotes >= quorum) {
         this.debug('Became LEADER');
-        this._state = RaftServerState.LEADER;
+        this.state = RaftServerState.LEADER;
         this.peers.forEach((peer, peerId) => {
           peer.nextIndex = this.log.length + 1;
           this.sendAppendEntriesMessage(peerId);
@@ -365,7 +362,7 @@ export class RaftServer {
     }
 
     if (this.term == message.term) {
-      this._state = RaftServerState.FOLLOWER;
+      this.state = RaftServerState.FOLLOWER;
       this.reloadElectionTimeout();
 
       if (
@@ -454,7 +451,7 @@ export class RaftServer {
   private handleMessageTimeout(message: RaftMessage) {
     this.debug(`Message timeout`, message);
 
-    if (this._state == RaftServerState.STOPPED) {
+    if (this.state == RaftServerState.STOPPED) {
       return;
     }
 
@@ -474,7 +471,7 @@ export class RaftServer {
     // still candidate, try again
     if (
       message.type == 'RequestVote' &&
-      this._state == RaftServerState.CANDIDATE
+      this.state == RaftServerState.CANDIDATE
     ) {
       // this.debug(`Timeout for sending ${message.type} message to ${message.to}, retrying...`, message);
       this.sendRequestVoteMessage(message.to);
@@ -485,7 +482,7 @@ export class RaftServer {
     // still leader, try again
     if (
       message.type == 'AppendEntries' &&
-      this._state == RaftServerState.LEADER
+      this.state == RaftServerState.LEADER
     ) {
       // this.debug(`Timeout for sending ${message.type} message to ${message.to}, retrying...`, message);
       this.sendAppendEntriesMessage(message.to);
@@ -516,11 +513,11 @@ export class RaftServer {
 
   // Can be in 4 states
   private handleHeartbeatTimeout(peerId: string) {
-    if (this._state == RaftServerState.STOPPED) {
+    if (this.state == RaftServerState.STOPPED) {
       return;
     }
 
-    if (this._state == RaftServerState.LEADER) {
+    if (this.state == RaftServerState.LEADER) {
       this.sendAppendEntriesMessage(peerId);
     }
   }
@@ -532,7 +529,7 @@ export class RaftServer {
   ////////////////////////////////////////////////
 
   stop() {
-    this._state = RaftServerState.STOPPED;
+    this.state = RaftServerState.STOPPED;
     clearTimeout(this.electionTimeoutId);
     this.peers.forEach((peer) => {
       clearTimeout(peer.heartbeatTimeoutId);
@@ -540,7 +537,7 @@ export class RaftServer {
   }
 
   start() {
-    this._state = RaftServerState.FOLLOWER;
+    this.state = RaftServerState.FOLLOWER;
     this.reloadElectionTimeout();
   }
 
