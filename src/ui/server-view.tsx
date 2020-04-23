@@ -26,6 +26,7 @@ export class ServerView extends React.Component<
     onServerStateUpdated: this.onServerStateUpdated.bind(this),
     onTurnOnButtonClicked: this.onTurnOnButtonClicked.bind(this),
     onTurnOffButtonClicked: this.onTurnOffButtonClicked.bind(this),
+    onTriggerElectionButtonClicked: this.onTriggerElectionButtonClicked.bind(this),
   };
 
   constructor(props: ServerViewProps) {
@@ -168,6 +169,11 @@ export class ServerView extends React.Component<
     server.stop();
   }
 
+  onTriggerElectionButtonClicked() {
+    const { server } = this.props;
+    server.forceTriggerElection();
+  }
+
   render() {
     const {
       id,
@@ -180,7 +186,11 @@ export class ServerView extends React.Component<
     } = this.state;
 
     return (
-      <div style={{ height: 150 }}>
+      <div style={{
+        height: 150,
+        transition: 'opacity 100ms',
+        opacity: state == RaftServerState.STOPPED ? 0.5 : 1
+      }}>
         <div>ID: {id}</div>
         <div>Term: {term}</div>
         <div>State: {state}</div>
@@ -200,6 +210,10 @@ export class ServerView extends React.Component<
           <button onClick={this.binded.onTurnOnButtonClicked}>Turn ON</button>
         ) : (
           <button onClick={this.binded.onTurnOffButtonClicked}>Turn OFF</button>
+        )}
+        {(state == RaftServerState.CANDIDATE ||
+          state == RaftServerState.FOLLOWER) && (
+            <button onClick={this.binded.onTriggerElectionButtonClicked}>Trigger Election Timer</button>
         )}
       </div>
     );

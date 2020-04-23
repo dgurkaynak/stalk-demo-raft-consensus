@@ -6,6 +6,7 @@ import { ServerView } from './ui/server-view';
 import { Sidebar } from './ui/sidebar';
 
 import 'antd/dist/antd.css';
+import './index.css';
 
 function App() {
   return (

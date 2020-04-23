@@ -1,6 +1,7 @@
 import React from 'react';
 import { Button, Space } from 'antd';
-import { cluster } from '../globals';
+import FlashChange from '@avinlab/react-flash-change';
+import { cluster, SESSION_ID } from '../globals';
 import { RaftServerState, RaftServerEvents } from '../raft/server';
 
 export interface SidebarProps {
@@ -109,6 +110,11 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
             padding: '0.5em',
           }}
         >
+          <div
+            style={{ textAlign: 'center', color: '#ddd', fontSize: '0.8em' }}
+          >
+            Session ID: {SESSION_ID}
+          </div>
           <Button block onClick={this.onTurnOnAllServersClicked}>
             Turn ON All Servers
           </Button>
@@ -117,17 +123,25 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
           </Button>
         </Space>
         <div>
-          <h3
-            style={{
-              borderBottom: '1px solid #f0f0f0',
-              padding: '0.5em',
-              marginTop: '1em',
-              display: 'flex',
-            }}
+          <FlashChange
+            className="green-background-color-flash"
+            value={leaderId}
+            flashClassName="active"
+            flashDuration={500}
           >
-            <span style={{ flexGrow: 1 }}>LEADER:</span>
-            <span>{leaderId || `N/A`}</span>
-          </h3>
+            <h3
+              style={{
+                borderBottom: '1px solid #f0f0f0',
+                padding: '0.5em',
+                marginTop: '1em',
+                display: 'flex',
+              }}
+            >
+              <span style={{ flexGrow: 1 }}>LEADER:</span>
+              <span>{leaderId || `N/A`}</span>
+            </h3>
+          </FlashChange>
+
           <div
             style={{
               padding: '0.5em',
@@ -141,7 +155,7 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
                 display: 'flex',
                 justifyContent: 'space-between',
                 fontSize: '2em',
-                // transition: 'color 250ms ease-in',
+                transition: 'color 250ms',
                 color: leaderId ? 'rgba(0, 0, 0, 0.9)' : 'rgba(0, 0, 0, 0.25)',
                 cursor: leaderId ? 'pointer' : 'default',
               }}

@@ -1,5 +1,5 @@
 import * as Chance from 'chance';
-import camelCase from 'lodash/camelCase';
+import kebabCase from 'lodash/kebabCase';
 import debug from 'debug';
 import { EventEmitter } from 'events';
 
@@ -95,7 +95,7 @@ export interface ServerPeer {
 }
 
 export class RaftServer {
-  readonly id = camelCase(chance.first());
+  readonly id = kebabCase(chance.first() + '-' + chance.letter());
   readonly ee = new EventEmitter();
 
   state = RaftServerState.STOPPED;
@@ -588,6 +588,10 @@ export class RaftServer {
 
   request() {
     // TODO
+  }
+
+  forceTriggerElection() {
+    this.handleElectionTimeout();
   }
 }
 
