@@ -7,7 +7,7 @@ export const MIN_MESSAGE_DELAY = 1000;
 export const MAX_MESSAGE_DELAY = 1500;
 export const RPC_TIMEOUT = 5000;
 export const MIN_ELECTION_TIMEOUT = 10000;
-export const MAX_ELECTION_TIMEOUT = 10000;
+export const MAX_ELECTION_TIMEOUT = 20000;
 export const HEARTBEAT_INTERVAL = 3000;
 export const BATCH_SIZE = 1;
 
@@ -562,6 +562,10 @@ export class RaftServer {
   ////////////////////////////////////////////////
 
   stop() {
+    if (this.state == RaftServerState.STOPPED) {
+      return;
+    }
+
     this.state = RaftServerState.STOPPED;
     clearTimeout(this.electionTimeoutId);
     this.peers.forEach((peer) => {
@@ -572,6 +576,10 @@ export class RaftServer {
   }
 
   start() {
+    if (this.state != RaftServerState.STOPPED) {
+      return;
+    }
+
     this.state = RaftServerState.FOLLOWER;
     this.reloadElectionTimeout();
 
