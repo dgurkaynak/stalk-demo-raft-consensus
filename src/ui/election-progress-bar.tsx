@@ -15,9 +15,9 @@ export class ElectionProgressBar extends React.Component<
   ElectionProgressBarProps,
   ElectionProgressBarState
 > {
-  private rAF: number;
+  rAF: number;
 
-  private binded = {
+  binded = {
     onTick: this.onTick.bind(this),
   };
 
@@ -29,7 +29,7 @@ export class ElectionProgressBar extends React.Component<
     };
   }
 
-  private onTick() {
+  onTick() {
     const { timeoutSetAt, timeoutDuration } = this.props;
     let percent = 0;
     if (timeoutSetAt) {

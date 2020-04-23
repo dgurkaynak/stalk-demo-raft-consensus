@@ -21,7 +21,7 @@ export class ServerView extends React.Component<
   ServerViewProps,
   ServerViewState
 > {
-  private binded = {
+  binded = {
     onElectionTimeoutUpdated: this.onElectionTimeoutUpdated.bind(this),
     onServerStateUpdated: this.onServerStateUpdated.bind(this),
     onTurnOnButtonClicked: this.onTurnOnButtonClicked.bind(this),

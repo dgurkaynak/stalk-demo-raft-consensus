@@ -6,6 +6,7 @@
     "target": "es6",
     "sourceMap": true,
     "allowSyntheticDefaultImports": true,
-    "jsx": "react"
+    "jsx": "react",
+    "moduleResolution": "node"
   }
 }

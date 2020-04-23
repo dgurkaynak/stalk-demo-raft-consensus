@@ -1,11 +1,11 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+import { Button, Space } from 'antd';
 import { cluster } from './globals';
 import { ServerView } from './ui/server-view';
+import { Sidebar } from './ui/sidebar';
 
-import 'normalize.css/normalize.css';
-
-
+import 'antd/dist/antd.css';
 
 function App() {
   return (
@@ -20,6 +20,7 @@ function App() {
         style={{
           minWidth: 500,
           flexGrow: 1,
+          background: '#f0f2f5',
         }}
       >
         {cluster.servers.map((server) => {
@@ -28,26 +29,12 @@ function App() {
       </div>
 
       {/* Sidebar */}
-      <div
+      <Sidebar
         style={{
           minWidth: 250,
           maxWidth: 250,
-          background: '#ccc',
         }}
-      >
-        <div>
-          <h4>CLUSTER</h4>
-          All - Turn ON / Turn OFF
-        </div>
-        <div>
-          <h4>Leader: xxx</h4>
-          Append log to Leader <br/>
-          Emojis here
-        </div>
-        <div>
-          <h4>SERVER LOGS</h4>
-        </div>
-      </div>
+      />
     </div>
   );
 }
