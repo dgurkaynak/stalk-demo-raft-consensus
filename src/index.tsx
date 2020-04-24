@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import { Button, Space } from 'antd';
 import { cluster } from './globals';
-import { ServerView } from './ui/server-view';
+import { ClusterView } from './ui/cluster-view';
 import { Sidebar } from './ui/sidebar';
 
 import 'antd/dist/antd.css';
@@ -16,8 +16,7 @@ function App() {
         display: 'flex',
       }}
     >
-      {/* Cluster visualization container */}
-      <div
+      <ClusterView
         style={{
           minWidth: 500,
           flexGrow: 1,
@@ -25,13 +24,8 @@ function App() {
           maxHeight: '100vh',
           overflowY: 'auto'
         }}
-      >
-        {cluster.servers.map((server) => {
-          return <ServerView key={server.id} server={server} />;
-        })}
-      </div>
+      />
 
-      {/* Sidebar */}
       <Sidebar
         style={{
           minWidth: 250,

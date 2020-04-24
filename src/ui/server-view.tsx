@@ -1,8 +1,12 @@
 import React from 'react';
+import { Button, Tooltip, Space } from 'antd';
+import { PoweroffOutlined, BellOutlined } from '@ant-design/icons';
+import FlashChange from '@avinlab/react-flash-change';
 import { RaftServer, RaftServerEvents, RaftServerState } from '../raft/server';
 import { ElectionProgressBar } from './election-progress-bar';
 
 export interface ServerViewProps {
+  style?: React.CSSProperties;
   server: RaftServer;
 }
 
@@ -26,7 +30,9 @@ export class ServerView extends React.Component<
     onServerStateUpdated: this.onServerStateUpdated.bind(this),
     onTurnOnButtonClicked: this.onTurnOnButtonClicked.bind(this),
     onTurnOffButtonClicked: this.onTurnOffButtonClicked.bind(this),
-    onTriggerElectionButtonClicked: this.onTriggerElectionButtonClicked.bind(this),
+    onTriggerElectionButtonClicked: this.onTriggerElectionButtonClicked.bind(
+      this
+    ),
   };
 
   constructor(props: ServerViewProps) {
@@ -182,39 +188,125 @@ export class ServerView extends React.Component<
       electionTimeoutSetAt,
       electionTimeoutDuration,
       peerCount,
-      grantedPeerVoteCount
+      grantedPeerVoteCount,
     } = this.state;
+    const { style } = this.props;
 
     return (
-      <div style={{
-        height: 150,
-        transition: 'opacity 100ms',
-        opacity: state == RaftServerState.STOPPED ? 0.5 : 1
-      }}>
-        <div>ID: {id}</div>
-        <div>Term: {term}</div>
-        <div>State: {state}</div>
-        {(state == RaftServerState.CANDIDATE ||
-          state == RaftServerState.FOLLOWER) && (
-          <ElectionProgressBar
-            style={{ height: 5 }}
-            barColor={`#00f`}
-            timeoutDuration={electionTimeoutDuration}
-            timeoutSetAt={electionTimeoutSetAt}
-          />
-        )}
-        {state == RaftServerState.CANDIDATE && (
-          <div>Votes: {grantedPeerVoteCount + 1} / {peerCount + 1}</div>
-        )}
-        {state == RaftServerState.STOPPED ? (
-          <button onClick={this.binded.onTurnOnButtonClicked}>Turn ON</button>
-        ) : (
-          <button onClick={this.binded.onTurnOffButtonClicked}>Turn OFF</button>
-        )}
-        {(state == RaftServerState.CANDIDATE ||
-          state == RaftServerState.FOLLOWER) && (
-            <button onClick={this.binded.onTriggerElectionButtonClicked}>Trigger Election Timer</button>
-        )}
+      <div
+        style={{
+          transition: 'opacity 100ms',
+          opacity: state == RaftServerState.STOPPED ? 0.5 : 1,
+          border: '1px solid rgba(0, 0, 0, 0.75)',
+          borderRadius: 5,
+          ...style
+        }}
+      >
+        <div
+          style={{
+            background: 'rgba(0, 0, 0, 0.75)',
+            textAlign: 'center',
+            fontWeight: 'bold',
+            fontSize: '0.8em',
+            padding: '2px 0',
+            color: '#fff',
+          }}
+        >
+          {id}
+        </div>
+
+        <div style={{ height: 10 }}>
+          {(state == RaftServerState.CANDIDATE ||
+            state == RaftServerState.FOLLOWER) && (
+            <ElectionProgressBar
+              style={{ height: 10 }}
+              barColor={`#1B90FA`}
+              timeoutDuration={electionTimeoutDuration}
+              timeoutSetAt={electionTimeoutSetAt}
+            />
+          )}
+        </div>
+
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-around',
+            marginTop: '0.25em',
+            // alignItems: 'center'
+          }}
+        >
+          {/* Term */}
+          <FlashChange
+            className="green-background-color-flash"
+            value={term}
+            flashClassName="active"
+            flashDuration={500}
+            style={{ textAlign: 'center', flexGrow: 1 }}
+          >
+            <div style={{ fontSize: '0.7em', fontWeight: 'bold' }} >TERM</div>
+            <div style={{ fontSize: '1.4em', lineHeight: '1em' }} >{term}</div>
+          </FlashChange>
+
+          {/* Status */}
+          <FlashChange
+            className="green-background-color-flash"
+            value={term}
+            flashClassName="active"
+            flashDuration={500}
+            style={{ textAlign: 'center', flexGrow: 1 }}
+          >
+            <div style={{ fontSize: '0.7em', fontWeight: 'bold' }}>STATUS</div>
+            <div style={{ fontSize: '1.4em', lineHeight: '1em' }}>
+              {state}
+              {state == RaftServerState.CANDIDATE ? `(${grantedPeerVoteCount + 1}/${peerCount + 1})` : ``}
+            </div>
+          </FlashChange>
+        </div>
+
+        {/* Buttons */}
+        <div
+          style={{
+            textAlign: 'center',
+            marginTop: 5
+          }}
+        >
+          <Space>
+            {state == RaftServerState.STOPPED ? (
+              <Tooltip title="Turn ON">
+                <Button
+                  type="primary"
+                  size="small"
+                  shape="circle"
+                  icon={<PoweroffOutlined />}
+                  onClick={this.binded.onTurnOnButtonClicked}
+                />
+              </Tooltip>
+            ) : (
+              <Tooltip title="Turn OFF">
+                <Button
+                  type="danger"
+                  size="small"
+                  shape="circle"
+                  icon={<PoweroffOutlined />}
+                  onClick={this.binded.onTurnOffButtonClicked}
+                />
+              </Tooltip>
+            )}
+            <Tooltip title="Force trigger election timer">
+              <Button
+                size="small"
+                shape="circle"
+                icon={<BellOutlined />}
+                disabled={
+                  state != RaftServerState.CANDIDATE &&
+                  state != RaftServerState.FOLLOWER
+                }
+                onClick={this.binded.onTriggerElectionButtonClicked}
+              />
+            </Tooltip>
+          </Space>
+        </div>
+
       </div>
     );
   }
