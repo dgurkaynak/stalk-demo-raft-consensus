@@ -1,5 +1,4 @@
-import * as Chance from 'chance';
-import kebabCase from 'lodash/kebabCase';
+
 import debug from 'debug';
 import { EventEmitter } from 'events';
 
@@ -11,7 +10,6 @@ export const MAX_ELECTION_TIMEOUT = 20000;
 export const HEARTBEAT_INTERVAL = 3000;
 export const BATCH_SIZE = 1;
 
-const chance = new Chance();
 
 export enum RaftServerState {
   FOLLOWER = 'follower',
@@ -31,7 +29,8 @@ export enum RaftServerEvents {
   BECAME_LEADER = 'became leader',
   RECIEVED_APPEND_ENTRIES = 'recieved append entries',
   STARTED = 'started',
-  STOPPED = 'stopped'
+  STOPPED = 'stopped',
+  LOG_REQUESTED = 'log requested'
 }
 
 export interface RaftLogItem {
@@ -95,7 +94,7 @@ export interface ServerPeer {
 }
 
 export class RaftServer {
-  readonly id = kebabCase(chance.first() + '-' + chance.letter());
+  readonly id: string;
   readonly ee = new EventEmitter();
 
   state = RaftServerState.STOPPED;
@@ -116,6 +115,10 @@ export class RaftServer {
    * ```
    */
   private debug = debug(`raft:server:${this.id}`);
+
+  constructor(id: string) {
+    this.id = id;
+  }
 
   init(options: { peerServers: RaftServer[] }) {
     const peersMap = new Map<string, ServerPeer>();
@@ -398,7 +401,7 @@ export class RaftServer {
 
       if (
         message.prevIndex == 0 ||
-        (message.prevIndex < this.log.length &&
+        (message.prevIndex <= this.log.length &&
           logTerm(this.log, message.prevIndex) == message.prevTerm)
       ) {
         success = true;
@@ -586,8 +589,13 @@ export class RaftServer {
     this.ee.emit(RaftServerEvents.STARTED);
   }
 
-  request() {
-    // TODO
+  request(value: string) {
+    this.log.push({
+      term: this.term,
+      value
+    });
+
+    this.ee.emit(RaftServerEvents.LOG_REQUESTED);
   }
 
   forceTriggerElection() {

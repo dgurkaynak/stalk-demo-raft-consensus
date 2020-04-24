@@ -1,14 +1,23 @@
 import React from 'react';
 import { Button, Space } from 'antd';
 import FlashChange from '@avinlab/react-flash-change';
+import times from 'lodash/times';
 import { cluster, SESSION_ID } from '../globals';
-import { RaftServerState, RaftServerEvents } from '../raft/server';
+import { RaftServerState, RaftServerEvents, RaftLogItem } from '../raft/server';
+
+const styles: any = {
+  verticalText: {
+    textOrientation: 'mixed',
+    writingMode: 'vertical-rl',
+  },
+};
 
 export interface SidebarProps {
   style?: React.CSSProperties;
 }
 export interface SidebarState {
   leaderId: string;
+  logs: { [key: string]: RaftLogItem }[];
 }
 
 export class Sidebar extends React.Component<SidebarProps, SidebarState> {
@@ -16,6 +25,7 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
     onTurnOnAllServersClicked: this.onTurnOnAllServersClicked.bind(this),
     onTurnOffAllServersClicked: this.onTurnOffAllServersClicked.bind(this),
     updateLeader: this.updateLeader.bind(this),
+    updateLogs: this.updateLogs.bind(this),
   };
 
   constructor(props: SidebarProps) {
@@ -23,6 +33,7 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
 
     this.state = {
       leaderId: null,
+      logs: [],
     };
   }
 
@@ -43,7 +54,11 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
       );
       server.ee.addListener(
         RaftServerEvents.RECIEVED_APPEND_ENTRIES,
-        this.binded.updateLeader
+        this.binded.updateLogs
+      );
+      server.ee.addListener(
+        RaftServerEvents.LOG_REQUESTED,
+        this.binded.updateLogs
       );
       server.ee.addListener(RaftServerEvents.STOPPED, this.binded.updateLeader);
       server.ee.addListener(RaftServerEvents.STARTED, this.binded.updateLeader);
@@ -67,7 +82,11 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
       );
       server.ee.removeListener(
         RaftServerEvents.RECIEVED_APPEND_ENTRIES,
-        this.binded.updateLeader
+        this.binded.updateLogs
+      );
+      server.ee.removeListener(
+        RaftServerEvents.LOG_REQUESTED,
+        this.binded.updateLogs
       );
       server.ee.removeListener(
         RaftServerEvents.STOPPED,
@@ -89,6 +108,25 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
     });
   }
 
+  updateLogs() {
+    this.updateLeader();
+
+    const logs: { [key: string]: RaftLogItem }[] = [];
+
+    cluster.servers.forEach((server) => {
+      server.log.forEach((logItem, index) => {
+        if (!logs[index]) {
+          logs[index] = {};
+        }
+
+        const indexObj = logs[index];
+        indexObj[`${server.id}`] = logItem;
+      });
+    });
+
+    this.setState({ logs });
+  }
+
   onTurnOnAllServersClicked() {
     cluster.servers.forEach((s) => s.start());
   }
@@ -97,12 +135,20 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
     cluster.servers.forEach((s) => s.stop());
   }
 
+  onEmojiClick(emoji: string) {
+    const { leaderId } = this.state;
+    if (!leaderId) return;
+    const server = cluster.servers.find(s => s.id == leaderId);
+    server?.request(emoji);
+  }
+
   render() {
     const { style } = this.props;
-    const { leaderId } = this.state;
+    const { leaderId, logs } = this.state;
 
     return (
       <div style={style}>
+        {/* Turn on/off buttons */}
         <Space
           direction="vertical"
           style={{
@@ -122,6 +168,8 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
             Turn OFF All Servers
           </Button>
         </Space>
+
+        {/* Leader section */}
         <div>
           <FlashChange
             className="green-background-color-flash"
@@ -160,15 +208,17 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
                 cursor: leaderId ? 'pointer' : 'default',
               }}
             >
-              <span>🔥</span>
-              <span>🍺</span>
-              <span>❤️</span>
-              <span>🤔</span>
-              <span>🍕</span>
-              <span>👍</span>
+              <span onClick={() => this.onEmojiClick('🔥')}>🔥</span>
+              <span onClick={() => this.onEmojiClick('🍺')}>🍺</span>
+              <span onClick={() => this.onEmojiClick('❤️')}>❤️</span>
+              <span onClick={() => this.onEmojiClick('🤔')}>🤔</span>
+              <span onClick={() => this.onEmojiClick('🍕')}>🍕</span>
+              <span onClick={() => this.onEmojiClick('👍')}>👍</span>
             </div>
           </div>
         </div>
+
+        {/* Server Logs section */}
         <div>
           <h3
             style={{
@@ -179,6 +229,55 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
           >
             SERVER LOGS
           </h3>
+
+          <table
+            style={{
+              width: 'calc(100% - 5px)',
+              borderCollapse: 'collapse',
+            }}
+          >
+            <thead>
+              <tr>
+                <td style={{ textAlign: 'center', width: 25 }}>
+                  <span style={styles.verticalText}></span>
+                </td>
+                {cluster.servers.map((server) => (
+                  <td key={server.id} style={{ textAlign: 'center' }}>
+                    <span style={styles.verticalText}>{server.id}</span>
+                  </td>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {times(Math.max(logs.length, 10), (logIndex) => {
+                const logRow = logs[logIndex] || {};
+
+                return (
+                  <tr key={`log-row-${logIndex}`}>
+                    <td style={{ textAlign: 'center' }}>{logIndex + 1}</td>
+                    {cluster.servers.map((server) => (
+                      <td
+                        key={server.id}
+                        style={{
+                          textAlign: 'center',
+                          border: '1px solid #f0f0f0',
+                        }}
+                      >
+                        <FlashChange
+                          className="green-background-color-flash"
+                          value={logRow[server.id]?.value}
+                          flashClassName="active"
+                          flashDuration={500}
+                        >
+                          <span>{logRow[server.id]?.value ?? ''}</span>
+                        </FlashChange>
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       </div>
     );

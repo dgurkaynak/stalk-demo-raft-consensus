@@ -22,6 +22,8 @@ function App() {
           minWidth: 500,
           flexGrow: 1,
           background: '#f0f2f5',
+          maxHeight: '100vh',
+          overflowY: 'auto'
         }}
       >
         {cluster.servers.map((server) => {
@@ -34,6 +36,8 @@ function App() {
         style={{
           minWidth: 250,
           maxWidth: 250,
+          maxHeight: '100vh',
+          overflowY: 'auto'
         }}
       />
     </div>
