@@ -3,6 +3,7 @@ import times from 'lodash/times';
 import { RaftServer, RaftServerEvents, RaftServerState } from '../raft/server';
 import { ServerView } from './server-view';
 import { cluster } from '../globals';
+import { MessagingView } from './messaging-view';
 
 const POINT_DIAMETER = 10;
 const SERVER_WIDTH = 175;
@@ -14,9 +15,9 @@ export interface ClusterViewProps {
 
 export interface ClusterViewState {
   serverCoordinates: {
-    pointX: number,
-    pointY: number,
-    angle: number,
+    pointX: number;
+    pointY: number;
+    angle: number;
   }[];
 }
 
@@ -25,16 +26,25 @@ export class ClusterView extends React.Component<
   ClusterViewState
 > {
   containerRef = React.createRef<HTMLDivElement>();
+  messagingViewRef = React.createRef<MessagingView>();
 
   constructor(props: ClusterViewProps) {
     super(props);
 
     this.state = {
-      serverCoordinates: []
+      serverCoordinates: [],
     };
   }
 
   componentDidMount() {
+    this.updateServerCoordinates();
+  }
+
+  componentWillUnmount() {
+    // TBD
+  }
+
+  updateServerCoordinates() {
     if (!this.containerRef.current) return;
     const width = this.containerRef.current.offsetWidth;
     const height = this.containerRef.current.offsetHeight;
@@ -53,16 +63,14 @@ export class ClusterView extends React.Component<
     const numOfServer = cluster.servers.length;
     const angleOffset = (2 * Math.PI) / numOfServer;
     times(numOfServer, (i) => {
-      const angle = (Math.PI / 2) + i * angleOffset;
+      const angle = Math.PI / 2 + i * angleOffset;
       const pointX = centerX - radius * Math.cos(angle);
       const pointY = centerY - radius * Math.sin(angle);
       pointCoordinates.push({ pointX, pointY, angle });
     });
-    this.setState({ serverCoordinates: pointCoordinates });
-  }
-
-  componentWillUnmount() {
-    // TBD
+    this.setState({ serverCoordinates: pointCoordinates }, () => {
+      this.messagingViewRef.current.setServerCoordinates(pointCoordinates);
+    });
   }
 
   render() {
@@ -74,9 +82,13 @@ export class ClusterView extends React.Component<
         ref={this.containerRef}
         style={{
           position: 'relative',
-          ...style
+          ...style,
         }}
       >
+        {/* Messaging view */}
+        <MessagingView ref={this.messagingViewRef} />
+
+        {/* Server points (messaging dots) */}
         {cluster.servers.map((server, i) => {
           const coord = serverCoordinates[i];
           return (
@@ -88,42 +100,40 @@ export class ClusterView extends React.Component<
                 height: POINT_DIAMETER,
                 borderRadius: POINT_DIAMETER / 2,
                 background: 'rgba(0, 0, 0, 0.25)',
-                top: coord ? coord.pointY - (POINT_DIAMETER / 2) : 0,
-                left: coord ? coord.pointX - (POINT_DIAMETER / 2) : 0
+                top: coord ? coord.pointY - POINT_DIAMETER / 2 : 0,
+                left: coord ? coord.pointX - POINT_DIAMETER / 2 : 0,
               }}
             ></div>
           );
         })}
 
+        {/* Server panels */}
         {cluster.servers.map((server, i) => {
           const coord = serverCoordinates[i];
           let top = 0;
           let left = 0;
           if (coord) {
             const angle = coord.angle % (2 * Math.PI);
-            if (
-              angle >= (Math.PI / 4) &&
-              angle < (3 * Math.PI / 4)
-            ) {
+            if (angle >= Math.PI / 4 && angle < (3 * Math.PI) / 4) {
               top = coord.pointY - SERVER_HEIGHT - 15;
-              left = coord.pointX - (SERVER_WIDTH / 2);
+              left = coord.pointX - SERVER_WIDTH / 2;
             } else if (
-              angle >= (3 * Math.PI / 4) &&
-              angle < (5 * Math.PI / 4)
+              angle >= (3 * Math.PI) / 4 &&
+              angle < (5 * Math.PI) / 4
             ) {
-              top = coord.pointY - (SERVER_HEIGHT / 2);
+              top = coord.pointY - SERVER_HEIGHT / 2;
               left = coord.pointX + 15;
             } else if (
-              angle >= (5 * Math.PI / 4) &&
-              angle < (7 * Math.PI / 4)
+              angle >= (5 * Math.PI) / 4 &&
+              angle < (7 * Math.PI) / 4
             ) {
               top = coord.pointY + 15;
-              left = coord.pointX - (SERVER_WIDTH / 2);
+              left = coord.pointX - SERVER_WIDTH / 2;
             } else if (
-              (angle >= (7 * Math.PI / 4) && angle < (8 * Math.PI / 4)) ||
-              (angle >= 0 && angle < (Math.PI / 4))
+              (angle >= (7 * Math.PI) / 4 && angle < (8 * Math.PI) / 4) ||
+              (angle >= 0 && angle < Math.PI / 4)
             ) {
-              top = coord.pointY - (SERVER_HEIGHT / 2);
+              top = coord.pointY - SERVER_HEIGHT / 2;
               left = coord.pointX - SERVER_WIDTH - 15;
             }
           }
@@ -137,7 +147,7 @@ export class ClusterView extends React.Component<
                 width: SERVER_WIDTH,
                 height: SERVER_HEIGHT,
                 top: top,
-                left: left
+                left: left,
               }}
             />
           );
