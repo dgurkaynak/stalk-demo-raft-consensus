@@ -199,7 +199,7 @@ export class ServerView extends React.Component<
           opacity: state == RaftServerState.STOPPED ? 0.5 : 1,
           border: '1px solid rgba(0, 0, 0, 0.75)',
           borderRadius: 5,
-          ...style
+          ...style,
         }}
       >
         <div
@@ -243,8 +243,8 @@ export class ServerView extends React.Component<
             flashDuration={500}
             style={{ textAlign: 'center', flexGrow: 1 }}
           >
-            <div style={{ fontSize: '0.7em', fontWeight: 'bold' }} >TERM</div>
-            <div style={{ fontSize: '1.4em', lineHeight: '1em' }} >{term}</div>
+            <div style={{ fontSize: '0.7em', fontWeight: 'bold' }}>TERM</div>
+            <div style={{ fontSize: '1.4em', lineHeight: '1em' }}>{term}</div>
           </FlashChange>
 
           {/* Status */}
@@ -258,7 +258,9 @@ export class ServerView extends React.Component<
             <div style={{ fontSize: '0.7em', fontWeight: 'bold' }}>STATUS</div>
             <div style={{ fontSize: '1.4em', lineHeight: '1em' }}>
               {state}
-              {state == RaftServerState.CANDIDATE ? `(${grantedPeerVoteCount + 1}/${peerCount + 1})` : ``}
+              {state == RaftServerState.CANDIDATE
+                ? `(${grantedPeerVoteCount + 1}/${peerCount + 1})`
+                : ``}
             </div>
           </FlashChange>
         </div>
@@ -267,12 +269,17 @@ export class ServerView extends React.Component<
         <div
           style={{
             textAlign: 'center',
-            marginTop: 5
+            marginTop: 5,
           }}
         >
           <Space>
             {state == RaftServerState.STOPPED ? (
-              <Tooltip title="Turn ON">
+              <Tooltip
+                title="Turn ON"
+                placement="bottom"
+                mouseEnterDelay={1}
+                overlayStyle={{ fontSize: '0.8em' }}
+              >
                 <Button
                   type="primary"
                   size="small"
@@ -282,7 +289,12 @@ export class ServerView extends React.Component<
                 />
               </Tooltip>
             ) : (
-              <Tooltip title="Turn OFF">
+              <Tooltip
+                title="Turn OFF"
+                placement="bottom"
+                mouseEnterDelay={1}
+                overlayStyle={{ fontSize: '0.8em' }}
+              >
                 <Button
                   type="danger"
                   size="small"
@@ -292,7 +304,12 @@ export class ServerView extends React.Component<
                 />
               </Tooltip>
             )}
-            <Tooltip title="Force trigger election timer">
+            <Tooltip
+              title="Trigger election timer"
+              placement="bottom"
+              mouseEnterDelay={1}
+              overlayStyle={{ fontSize: '0.8em' }}
+            >
               <Button
                 size="small"
                 shape="circle"
@@ -306,7 +323,6 @@ export class ServerView extends React.Component<
             </Tooltip>
           </Space>
         </div>
-
       </div>
     );
   }
