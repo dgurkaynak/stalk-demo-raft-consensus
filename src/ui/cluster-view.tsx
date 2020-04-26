@@ -14,6 +14,8 @@ export interface ClusterViewProps {
 }
 
 export interface ClusterViewState {
+  center: { x: number, y: number };
+  circleRadius: number,
   serverCoordinates: {
     pointX: number;
     pointY: number;
@@ -32,6 +34,8 @@ export class ClusterView extends React.Component<
     super(props);
 
     this.state = {
+      center: { x: 0, y: 0 },
+      circleRadius: 0,
       serverCoordinates: [],
     };
   }
@@ -68,14 +72,18 @@ export class ClusterView extends React.Component<
       const pointY = centerY - radius * Math.sin(angle);
       pointCoordinates.push({ pointX, pointY, angle });
     });
-    this.setState({ serverCoordinates: pointCoordinates }, () => {
+    this.setState({
+      center: { x: centerX, y: centerY },
+      circleRadius: radius,
+      serverCoordinates: pointCoordinates
+    }, () => {
       this.messagingViewRef.current.setServerCoordinates(pointCoordinates);
     });
   }
 
   render() {
     const { style } = this.props;
-    const { serverCoordinates } = this.state;
+    const { center, circleRadius, serverCoordinates } = this.state;
 
     return (
       <div
@@ -85,6 +93,20 @@ export class ClusterView extends React.Component<
           ...style,
         }}
       >
+        {/* Cluster circle */}
+        <div
+          style={{
+            position: 'absolute',
+            boxSizing: 'border-box',
+            border: '1px solid rgba(0, 0, 0, 0.1)',
+            width: circleRadius * 2,
+            height: circleRadius * 2,
+            borderRadius: circleRadius,
+            top: center.y - circleRadius,
+            left: center.x - circleRadius
+          }}
+        ></div>
+
         {/* Messaging view */}
         <MessagingView ref={this.messagingViewRef} />
 
@@ -99,7 +121,7 @@ export class ClusterView extends React.Component<
                 width: POINT_DIAMETER,
                 height: POINT_DIAMETER,
                 borderRadius: POINT_DIAMETER / 2,
-                background: 'rgba(0, 0, 0, 0.25)',
+                background: '#B4B5B8',
                 top: coord ? coord.pointY - POINT_DIAMETER / 2 : 0,
                 left: coord ? coord.pointX - POINT_DIAMETER / 2 : 0,
               }}

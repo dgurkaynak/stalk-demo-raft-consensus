@@ -197,14 +197,14 @@ export class ServerView extends React.Component<
         style={{
           transition: 'opacity 100ms',
           opacity: state == RaftServerState.STOPPED ? 0.5 : 1,
-          border: '1px solid rgba(0, 0, 0, 0.75)',
+          border: '1px solid #3C3D3D',
           borderRadius: 5,
           ...style,
         }}
       >
         <div
           style={{
-            background: 'rgba(0, 0, 0, 0.75)',
+            background: '#3C3D3D',
             textAlign: 'center',
             fontWeight: 'bold',
             fontSize: '0.8em',
