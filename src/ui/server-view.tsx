@@ -280,11 +280,7 @@ export class ServerView extends React.Component<
           }}
         >
           {/* Term */}
-          <FlashChange
-            className="green-background-color-flash"
-            value={term}
-            flashClassName="active"
-            flashDuration={500}
+          <div
             style={{
               textAlign: 'center',
               flexGrow: 1,
@@ -295,14 +291,10 @@ export class ServerView extends React.Component<
           >
             <div style={{ fontSize: '0.7em', fontWeight: 'bold' }}>TERM</div>
             <div style={{ fontSize: '1.4em', lineHeight: '1em' }}>{term}</div>
-          </FlashChange>
+          </div>
 
           {/* Status */}
-          <FlashChange
-            className="green-background-color-flash"
-            value={term}
-            flashClassName="active"
-            flashDuration={500}
+          <div
             style={{
               textAlign: 'center',
               flexGrow: 1,
@@ -318,7 +310,7 @@ export class ServerView extends React.Component<
                 ? `(${grantedPeerVoteCount + 1}/${peerCount + 1})`
                 : ``}
             </div>
-          </FlashChange>
+          </div>
         </div>
       </div>
     );

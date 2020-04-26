@@ -3,7 +3,7 @@ import forEachRight from 'lodash/forEachRight';
 import { RaftServerEvents, RaftMessage } from '../raft/server';
 import { cluster } from '../globals';
 
-const MESSAGE_DIAMETER = 10;
+const MESSAGE_DIAMETER = 16;
 
 export interface MessagingViewProps {}
 export interface MessagingViewState {}
@@ -87,12 +87,30 @@ export class MessagingView extends React.Component<
     element.style.width = `${MESSAGE_DIAMETER}px`;
     element.style.height = `${MESSAGE_DIAMETER}px`;
     element.style.borderRadius = `${MESSAGE_DIAMETER / 2}px`;
-    // element.style.background = '#1B90FA';
-    element.style.background = '#FB8E67';
-    // element.style.border = '5px solid #FB8E67';
-    // element.style.textAlign = 'center';
-    // element.style.lineHeight = `${MESSAGE_DIAMETER}px`;
-    // element.textContent = '✔️'; // ❌
+    element.style.lineHeight = `${MESSAGE_DIAMETER}px`;
+    element.style.textAlign = 'center';
+    element.style.fontSize = '10px';
+    element.style.color = '#fff';
+
+    switch (data.message.type) {
+      case 'AppendEntries':
+        element.textContent = 'A';
+        element.style.background = '#2593FC';
+        break;
+      case 'AppendEntriesResponse':
+        element.textContent = 'A';
+        element.style.background = data.message.success ? '#57C22D' : '#FD4F54';
+        break;
+      case 'RequestVote':
+        element.textContent = 'R';
+        element.style.background = '#2593FC';
+        break;
+      case 'RequestVoteResponse':
+        element.textContent = 'R';
+        element.style.background = data.message.granted ? '#57C22D' : '#FD4F54';
+        break;
+    }
+
     element.style.transform = 'translate(0, 0)';
     this.containerRef.current.appendChild(element);
 

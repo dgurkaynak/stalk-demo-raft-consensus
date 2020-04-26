@@ -9,13 +9,33 @@ const POINT_DIAMETER = 10;
 const SERVER_WIDTH = 190;
 const SERVER_HEIGHT = 75;
 
+const styles = {
+  legend: {
+    circle: {
+      display: 'inline-block',
+      width: 16,
+      height: 16,
+      borderRadius: 8,
+      lineHeight: '16px',
+      fontSize: 10,
+      textAlign: 'center',
+      color: '#fff',
+    },
+    label: {
+      marginLeft: 5,
+      fontSize: 10,
+      color: '#666',
+    },
+  },
+};
+
 export interface ClusterViewProps {
   style?: React.CSSProperties;
 }
 
 export interface ClusterViewState {
-  center: { x: number, y: number };
-  circleRadius: number,
+  center: { x: number; y: number };
+  circleRadius: number;
   serverCoordinates: {
     pointX: number;
     pointY: number;
@@ -72,13 +92,16 @@ export class ClusterView extends React.Component<
       const pointY = centerY - radius * Math.sin(angle);
       pointCoordinates.push({ pointX, pointY, angle });
     });
-    this.setState({
-      center: { x: centerX, y: centerY },
-      circleRadius: radius,
-      serverCoordinates: pointCoordinates
-    }, () => {
-      this.messagingViewRef.current.setServerCoordinates(pointCoordinates);
-    });
+    this.setState(
+      {
+        center: { x: centerX, y: centerY },
+        circleRadius: radius,
+        serverCoordinates: pointCoordinates,
+      },
+      () => {
+        this.messagingViewRef.current.setServerCoordinates(pointCoordinates);
+      }
+    );
   }
 
   render() {
@@ -93,6 +116,74 @@ export class ClusterView extends React.Component<
           ...style,
         }}
       >
+        {/* Legend */}
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            right: 0,
+            padding: '2px 5px 2px 3px',
+            border: '1px solid #ccc',
+            borderRight: 0,
+            borderBottom: 0,
+            opacity: 0.5,
+          }}
+        >
+          {/* Append entries */}
+          <div>
+            <span
+              style={{
+                ...(styles.legend.circle as any),
+                background: '#2593FC',
+              }}
+            >
+              A
+            </span>
+            <span style={styles.legend.label}>
+              Append Entries &amp; Heartbeat
+            </span>
+          </div>
+
+          {/* Request vote */}
+          <div>
+            <span
+              style={{
+                ...(styles.legend.circle as any),
+                background: '#2593FC',
+              }}
+            >
+              R
+            </span>
+            <span style={styles.legend.label}>Request Vote</span>
+          </div>
+
+          {/* Reply - success */}
+          <div>
+            <span
+              style={{
+                ...(styles.legend.circle as any),
+                background: '#57C22D',
+              }}
+            >
+              &nbsp;
+            </span>
+            <span style={styles.legend.label}>Reply: Success</span>
+          </div>
+
+          {/* Reply - error */}
+          <div>
+            <span
+              style={{
+                ...(styles.legend.circle as any),
+                background: '#FD4F54',
+              }}
+            >
+              &nbsp;
+            </span>
+            <span style={styles.legend.label}>Reply: Error</span>
+          </div>
+        </div>
+
         {/* Cluster circle */}
         <div
           style={{
@@ -103,7 +194,7 @@ export class ClusterView extends React.Component<
             height: circleRadius * 2,
             borderRadius: circleRadius,
             top: center.y - circleRadius,
-            left: center.x - circleRadius
+            left: center.x - circleRadius,
           }}
         ></div>
 
