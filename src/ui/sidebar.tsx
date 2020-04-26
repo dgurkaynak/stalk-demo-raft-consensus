@@ -3,7 +3,12 @@ import { Button, Space } from 'antd';
 import FlashChange from '@avinlab/react-flash-change';
 import times from 'lodash/times';
 import { cluster, SESSION_ID } from '../globals';
-import { RaftServerState, RaftServerEvents, RaftLogItem } from '../raft/server';
+import {
+  RaftServerState,
+  RaftServerEvents,
+  RaftLogItem,
+  RaftServer,
+} from '../raft/server';
 
 const styles: any = {
   verticalText: {
@@ -18,6 +23,8 @@ export interface SidebarProps {
 export interface SidebarState {
   leaderId: string;
   logs: { [key: string]: RaftLogItem }[];
+  turnedOnServerCount: number;
+  turnedOffServerCount: number;
 }
 
 export class Sidebar extends React.Component<SidebarProps, SidebarState> {
@@ -26,6 +33,7 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
     onTurnOffAllServersClicked: this.onTurnOffAllServersClicked.bind(this),
     updateLeader: this.updateLeader.bind(this),
     updateLogs: this.updateLogs.bind(this),
+    updateTurnOnOffCounts: this.updateTurnOnOffCounts.bind(this),
   };
 
   constructor(props: SidebarProps) {
@@ -34,6 +42,8 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
     this.state = {
       leaderId: null,
       logs: [],
+      turnedOnServerCount: 0,
+      turnedOffServerCount: cluster.servers.length,
     };
   }
 
@@ -60,8 +70,14 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
         RaftServerEvents.LOG_REQUESTED,
         this.binded.updateLogs
       );
-      server.ee.addListener(RaftServerEvents.STOPPED, this.binded.updateLeader);
-      server.ee.addListener(RaftServerEvents.STARTED, this.binded.updateLeader);
+      server.ee.addListener(
+        RaftServerEvents.STOPPED,
+        this.binded.updateTurnOnOffCounts
+      );
+      server.ee.addListener(
+        RaftServerEvents.STARTED,
+        this.binded.updateTurnOnOffCounts
+      );
     });
   }
 
@@ -90,11 +106,11 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
       );
       server.ee.removeListener(
         RaftServerEvents.STOPPED,
-        this.binded.updateLeader
+        this.binded.updateTurnOnOffCounts
       );
       server.ee.removeListener(
         RaftServerEvents.STARTED,
-        this.binded.updateLeader
+        this.binded.updateTurnOnOffCounts
       );
     });
   }
@@ -127,6 +143,27 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
     this.setState({ logs });
   }
 
+  updateTurnOnOffCounts() {
+    this.updateLeader();
+
+    const turnedOnServers: RaftServer[] = [];
+    const turnedOffServers: RaftServer[] = [];
+
+    cluster.servers.forEach((server) => {
+      if (server.state == RaftServerState.STOPPED) {
+        turnedOffServers.push(server);
+        return;
+      }
+
+      turnedOnServers.push(server);
+    });
+
+    this.setState({
+      turnedOnServerCount: turnedOnServers.length,
+      turnedOffServerCount: turnedOffServers.length,
+    });
+  }
+
   onTurnOnAllServersClicked() {
     cluster.servers.forEach((s) => s.start());
   }
@@ -138,13 +175,18 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
   onEmojiClick(emoji: string) {
     const { leaderId } = this.state;
     if (!leaderId) return;
-    const server = cluster.servers.find(s => s.id == leaderId);
+    const server = cluster.servers.find((s) => s.id == leaderId);
     server?.request(emoji);
   }
 
   render() {
     const { style } = this.props;
-    const { leaderId, logs } = this.state;
+    const {
+      leaderId,
+      logs,
+      turnedOnServerCount,
+      turnedOffServerCount,
+    } = this.state;
 
     return (
       <div style={style}>
@@ -161,10 +203,21 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
           >
             Session ID: {SESSION_ID}
           </div>
-          <Button block onClick={this.onTurnOnAllServersClicked}>
+          <Button
+            type="primary"
+            block
+            onClick={this.onTurnOnAllServersClicked}
+            disabled={turnedOnServerCount == cluster.servers.length}
+          >
             Turn ON All Servers
           </Button>
-          <Button block danger onClick={this.onTurnOffAllServersClicked}>
+          <Button
+            type="primary"
+            block
+            danger
+            onClick={this.onTurnOffAllServersClicked}
+            disabled={turnedOffServerCount == cluster.servers.length}
+          >
             Turn OFF All Servers
           </Button>
         </Space>
