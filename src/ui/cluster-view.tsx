@@ -6,8 +6,8 @@ import { cluster } from '../globals';
 import { MessagingView } from './messaging-view';
 
 const POINT_DIAMETER = 10;
-const SERVER_WIDTH = 175;
-const SERVER_HEIGHT = 110;
+const SERVER_WIDTH = 190;
+const SERVER_HEIGHT = 75;
 
 export interface ClusterViewProps {
   style?: React.CSSProperties;
@@ -57,8 +57,8 @@ export class ClusterView extends React.Component<
     const centerY = height / 2;
 
     const diameter = Math.min(
-      width - 2 * (SERVER_WIDTH * 1.5),
-      height - 2 * (SERVER_HEIGHT * 1.5)
+      width - 2 * (SERVER_WIDTH + 20),
+      height - 2 * (SERVER_HEIGHT + 30)
     );
     const radius = diameter / 2;
 

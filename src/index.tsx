@@ -16,20 +16,20 @@ function App() {
         display: 'flex',
       }}
     >
-      <ClusterView
+      <Sidebar
         style={{
-          minWidth: 500,
-          flexGrow: 1,
-          background: '#f0f2f5',
+          minWidth: 250,
+          maxWidth: 250,
           maxHeight: '100vh',
           overflowY: 'auto'
         }}
       />
 
-      <Sidebar
+      <ClusterView
         style={{
-          minWidth: 250,
-          maxWidth: 250,
+          minWidth: 500,
+          flexGrow: 1,
+          background: '#f0f2f5',
           maxHeight: '100vh',
           overflowY: 'auto'
         }}

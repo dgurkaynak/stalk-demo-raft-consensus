@@ -1,6 +1,10 @@
 import React from 'react';
-import { Button, Tooltip, Space } from 'antd';
-import { PoweroffOutlined, BellOutlined } from '@ant-design/icons';
+import { Button, Tooltip, Space, Menu, Dropdown } from 'antd';
+import {
+  PoweroffOutlined,
+  BellOutlined,
+  MenuOutlined,
+} from '@ant-design/icons';
 import FlashChange from '@avinlab/react-flash-change';
 import { RaftServer, RaftServerEvents, RaftServerState } from '../raft/server';
 import { ElectionProgressBar } from './election-progress-bar';
@@ -199,6 +203,7 @@ export class ServerView extends React.Component<
           opacity: state == RaftServerState.STOPPED ? 0.5 : 1,
           border: '1px solid #3C3D3D',
           borderRadius: 5,
+          overflow: 'hidden',
           ...style,
         }}
       >
@@ -210,16 +215,55 @@ export class ServerView extends React.Component<
             fontSize: '0.8em',
             padding: '2px 0',
             color: '#fff',
+            display: 'flex',
           }}
         >
-          {id}
+          <div style={{ width: 22 }}></div>
+          <div style={{ flexGrow: 1, textAlign: 'center' }}>{id}</div>
+          <div style={{ width: 22 }}>
+            <Dropdown
+              overlay={
+                <Menu>
+                  {state == RaftServerState.STOPPED ? (
+                    <Menu.Item onClick={this.binded.onTurnOnButtonClicked}>
+                      <PoweroffOutlined />
+                      Turn ON
+                    </Menu.Item>
+                  ) : (
+                    <Menu.Item onClick={this.binded.onTurnOffButtonClicked}>
+                      <PoweroffOutlined />
+                      Turn OFF
+                    </Menu.Item>
+                  )}
+                  <Menu.Item
+                    disabled={
+                      state != RaftServerState.CANDIDATE &&
+                      state != RaftServerState.FOLLOWER
+                    }
+                    onClick={this.binded.onTriggerElectionButtonClicked}
+                  >
+                    <BellOutlined />
+                    Trigger Election Timer
+                  </Menu.Item>
+                </Menu>
+              }
+            >
+              <a
+                className="ant-dropdown-link"
+                style={{ color: '#fff', padding: '0 5px' }}
+                onClick={(e) => e.preventDefault()}
+              >
+                <MenuOutlined />
+              </a>
+            </Dropdown>
+          </div>
         </div>
 
-        <div style={{ height: 10 }}>
+        <div style={{ height: 5 }}>
           {(state == RaftServerState.CANDIDATE ||
             state == RaftServerState.FOLLOWER) && (
             <ElectionProgressBar
-              style={{ height: 10 }}
+              style={{ height: 5 }}
               barColor={`#1B90FA`}
               timeoutDuration={electionTimeoutDuration}
               timeoutSetAt={electionTimeoutSetAt}
@@ -231,8 +275,8 @@ export class ServerView extends React.Component<
           style={{
             display: 'flex',
             justifyContent: 'space-around',
-            marginTop: '0.25em',
-            // alignItems: 'center'
+            marginTop: -5,
+            height: '3.7em',
           }}
         >
           {/* Term */}
@@ -241,7 +285,13 @@ export class ServerView extends React.Component<
             value={term}
             flashClassName="active"
             flashDuration={500}
-            style={{ textAlign: 'center', flexGrow: 1 }}
+            style={{
+              textAlign: 'center',
+              flexGrow: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+            }}
           >
             <div style={{ fontSize: '0.7em', fontWeight: 'bold' }}>TERM</div>
             <div style={{ fontSize: '1.4em', lineHeight: '1em' }}>{term}</div>
@@ -253,7 +303,13 @@ export class ServerView extends React.Component<
             value={term}
             flashClassName="active"
             flashDuration={500}
-            style={{ textAlign: 'center', flexGrow: 1 }}
+            style={{
+              textAlign: 'center',
+              flexGrow: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+            }}
           >
             <div style={{ fontSize: '0.7em', fontWeight: 'bold' }}>STATUS</div>
             <div style={{ fontSize: '1.4em', lineHeight: '1em' }}>
@@ -263,65 +319,6 @@ export class ServerView extends React.Component<
                 : ``}
             </div>
           </FlashChange>
-        </div>
-
-        {/* Buttons */}
-        <div
-          style={{
-            textAlign: 'center',
-            marginTop: 5,
-          }}
-        >
-          <Space>
-            {state == RaftServerState.STOPPED ? (
-              <Tooltip
-                title="Turn ON"
-                placement="bottom"
-                mouseEnterDelay={1}
-                overlayStyle={{ fontSize: '0.8em' }}
-              >
-                <Button
-                  type="primary"
-                  size="small"
-                  shape="circle"
-                  icon={<PoweroffOutlined />}
-                  onClick={this.binded.onTurnOnButtonClicked}
-                />
-              </Tooltip>
-            ) : (
-              <Tooltip
-                title="Turn OFF"
-                placement="bottom"
-                mouseEnterDelay={1}
-                overlayStyle={{ fontSize: '0.8em' }}
-              >
-                <Button
-                  type="danger"
-                  size="small"
-                  shape="circle"
-                  icon={<PoweroffOutlined />}
-                  onClick={this.binded.onTurnOffButtonClicked}
-                />
-              </Tooltip>
-            )}
-            <Tooltip
-              title="Trigger election timer"
-              placement="bottom"
-              mouseEnterDelay={1}
-              overlayStyle={{ fontSize: '0.8em' }}
-            >
-              <Button
-                size="small"
-                shape="circle"
-                icon={<BellOutlined />}
-                disabled={
-                  state != RaftServerState.CANDIDATE &&
-                  state != RaftServerState.FOLLOWER
-                }
-                onClick={this.binded.onTriggerElectionButtonClicked}
-              />
-            </Tooltip>
-          </Space>
         </div>
       </div>
     );
