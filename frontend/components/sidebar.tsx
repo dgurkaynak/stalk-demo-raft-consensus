@@ -2,7 +2,8 @@ import React from 'react';
 import { Button, Space } from 'antd';
 import FlashChange from '@avinlab/react-flash-change';
 import times from 'lodash/times';
-import { cluster, SESSION_ID } from '../globals';
+import { cluster } from '../globals';
+import { SESSION_ID } from '../session-id';
 import {
   RaftServerState,
   RaftServerEvents,
