@@ -2,8 +2,8 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import { Button, Space } from 'antd';
 import { cluster } from './globals';
-import { ClusterView } from './ui/cluster-view';
-import { Sidebar } from './ui/sidebar';
+import { ClusterView } from './components/cluster-view';
+import { Sidebar } from './components/sidebar';
 
 import 'antd/dist/antd.css';
 import './index.css';
