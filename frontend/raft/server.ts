@@ -5,6 +5,7 @@ import * as opentracing from 'opentracing';
 import { Tracer } from '../tracing/tracer';
 import { Span } from '../tracing/span';
 
+// Extremely slow-downed for visulatization
 export const MIN_MESSAGE_DELAY = 1000;
 export const MAX_MESSAGE_DELAY = 1500;
 export const RPC_TIMEOUT = 5000;
@@ -12,6 +13,15 @@ export const MIN_ELECTION_TIMEOUT = 10000;
 export const MAX_ELECTION_TIMEOUT = 20000;
 export const HEARTBEAT_INTERVAL = 3000;
 export const BATCH_SIZE = 1;
+
+// More realistic scenario
+// export const MIN_MESSAGE_DELAY = 50;
+// export const MAX_MESSAGE_DELAY = 150;
+// export const RPC_TIMEOUT = 400;
+// export const MIN_ELECTION_TIMEOUT = 1000;
+// export const MAX_ELECTION_TIMEOUT = 1200;
+// export const HEARTBEAT_INTERVAL = 300;
+// export const BATCH_SIZE = 1;
 
 export enum RaftServerState {
   FOLLOWER = 'follower',
@@ -204,21 +214,16 @@ export class RaftServer {
 
   // child of
   private reloadElectionTimeout(parentSpan: Span) {
-    const span = this.tracer.startSpan('reloadElectionTimeout', {
-      childOf: parentSpan,
-    });
-
     clearTimeout(this.electionTimeoutId);
     const delay =
       MIN_ELECTION_TIMEOUT +
       Math.random() * (MAX_ELECTION_TIMEOUT - MIN_ELECTION_TIMEOUT);
     this.electionTimeoutId = setTimeout(
-      () => this.handleElectionTimeout(span, true),
+      () => this.handleElectionTimeout(parentSpan, true),
       delay
     ) as any;
 
-    span.addTags({ timeout: delay });
-    span.finish();
+    parentSpan.log({ message: `Election timeout reset`, timeout: delay });
     this.ee.emit(RaftServerEvents.SET_ELECTION_TIMEOUT, { delay });
   }
 
@@ -276,14 +281,11 @@ export class RaftServer {
   }
 
   private stepDown(parentSpan: Span, term: number) {
-    const span = this.tracer.startSpan('stepDown', { childOf: parentSpan });
-
     this.state = RaftServerState.FOLLOWER;
     this.term = term;
     this.votedFor = null;
-    this.reloadElectionTimeout(span);
+    this.reloadElectionTimeout(parentSpan);
 
-    span.finish();
     this.ee.emit(RaftServerEvents.STEPPED_DOWN);
 
     // We're updating `term`
@@ -292,7 +294,7 @@ export class RaftServer {
   }
 
   private sendRequestVoteMessage(parentSpan: Span, peerId: string) {
-    const span = this.tracer.startSpan('sendRequestVoteMessage', {
+    const span = this.tracer.startSpan('requestVote', {
       references: [opentracing.followsFrom(parentSpan.context())],
     });
 
@@ -324,7 +326,7 @@ export class RaftServer {
       opentracing.FORMAT_TEXT_MAP,
       message
     );
-    const span = this.tracer.startSpan('handleRequestVoteMessage', {
+    const span = this.tracer.startSpan('handleRequestVote', {
       childOf: parentSpanContext,
     });
     span.addTags({
@@ -441,7 +443,7 @@ export class RaftServer {
     const peer = this.peers.get(peerId);
     if (!peer) return;
 
-    const span = this.tracer.startSpan('sendAppendEntriesMessage', {
+    const span = this.tracer.startSpan('appendEntries', {
       references: [opentracing.followsFrom(parentSpan.context())],
     });
 
@@ -466,7 +468,7 @@ export class RaftServer {
       term: this.term,
       prevIndex: message.prevIndex,
       prevTerm: message.prevTerm,
-      entries: message.entries.map((e) => `${e.term}: ${e.value}`).join(','),
+      entries: message.entries.map((e) => e.value).join(','),
       commitIndex: message.commitIndex,
     });
     this.tracer.inject(span, opentracing.FORMAT_TEXT_MAP, message);
@@ -484,7 +486,7 @@ export class RaftServer {
       opentracing.FORMAT_TEXT_MAP,
       message
     );
-    const span = this.tracer.startSpan('handleAppendEntriesMessage', {
+    const span = this.tracer.startSpan('handleAppendEntries', {
       childOf: parentSpanContext,
     });
     span.addTags({
@@ -707,7 +709,7 @@ export class RaftServer {
       'this.state': this.state,
       'this.term': this.term,
       'this.votedFor': this.votedFor,
-      'this.logs': this.log.map((l, i) => `${i}: ${l.value}`).join(','),
+      'this.logs': this.log.map((l, i) => l.value).join(','),
       'this.logsLength': this.log.length,
       'this.commitIndex': this.commitIndex,
     };

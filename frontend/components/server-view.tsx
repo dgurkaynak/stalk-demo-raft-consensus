@@ -37,6 +37,7 @@ export class ServerView extends React.Component<
     onTriggerElectionButtonClicked: this.onTriggerElectionButtonClicked.bind(
       this
     ),
+    onPowerToggleClicked: this.onPowerToggleClicked.bind(this),
   };
 
   constructor(props: ServerViewProps) {
@@ -179,9 +180,23 @@ export class ServerView extends React.Component<
     server.stop();
   }
 
+  onPowerToggleClicked() {
+    const { server } = this.props;
+    if (server.state == RaftServerState.STOPPED) {
+      server.start();
+    } else {
+      server.stop();
+    }
+  }
+
   onTriggerElectionButtonClicked() {
     const { server } = this.props;
-    server.forceTriggerElection();
+    if (
+      server.state == RaftServerState.CANDIDATE ||
+      server.state == RaftServerState.FOLLOWER
+    ) {
+      server.forceTriggerElection();
+    }
   }
 
   render() {
@@ -204,6 +219,7 @@ export class ServerView extends React.Component<
           border: '1px solid #3C3D3D',
           borderRadius: 5,
           overflow: 'hidden',
+          userSelect: 'none',
           ...style,
         }}
       >
@@ -218,44 +234,21 @@ export class ServerView extends React.Component<
             display: 'flex',
           }}
         >
-          <div style={{ width: 22 }}></div>
+          <div style={{ width: 50 }}></div>
           <div style={{ flexGrow: 1, textAlign: 'center' }}>{id}</div>
-          <div style={{ width: 22 }}>
-            <Dropdown
-              overlay={
-                <Menu>
-                  {state == RaftServerState.STOPPED ? (
-                    <Menu.Item onClick={this.binded.onTurnOnButtonClicked}>
-                      <PoweroffOutlined />
-                      Turn ON
-                    </Menu.Item>
-                  ) : (
-                    <Menu.Item onClick={this.binded.onTurnOffButtonClicked}>
-                      <PoweroffOutlined />
-                      Turn OFF
-                    </Menu.Item>
-                  )}
-                  <Menu.Item
-                    disabled={
-                      state != RaftServerState.CANDIDATE &&
-                      state != RaftServerState.FOLLOWER
-                    }
-                    onClick={this.binded.onTriggerElectionButtonClicked}
-                  >
-                    <BellOutlined />
-                    Trigger Election Timer
-                  </Menu.Item>
-                </Menu>
-              }
-            >
-              <a
-                className="ant-dropdown-link"
-                style={{ color: '#fff', padding: '0 5px' }}
-                onClick={(e) => e.preventDefault()}
-              >
-                <MenuOutlined />
-              </a>
-            </Dropdown>
+          <div style={{ width: 50, textAlign: 'right' }}>
+            <Tooltip title="Turn ON/OFF" mouseEnterDelay={1}>
+              <span
+                style={{ cursor: 'pointer', padding: 3 }}
+                onClick={this.binded.onPowerToggleClicked}
+              ><PoweroffOutlined /></span>
+            </Tooltip>
+            <Tooltip title="Trigger Election Timer" mouseEnterDelay={1}>
+              <span
+                style={{ cursor: 'pointer', padding: 3 }}
+                onClick={this.binded.onTriggerElectionButtonClicked}
+              ><BellOutlined /></span>
+            </Tooltip>
           </div>
         </div>
 
