@@ -331,9 +331,9 @@ export class RaftServer {
     });
     span.addTags({
       ...this.dumpState(),
-      'message.term': message.term,
-      'message.lastLogTerm': message.lastLogTerm,
-      'message.lastLogIndex': message.lastLogIndex,
+      'request.term': message.term,
+      'request.lastLogTerm': message.lastLogTerm,
+      'request.lastLogIndex': message.lastLogIndex,
     });
 
     this.debug(
@@ -389,8 +389,8 @@ export class RaftServer {
     span?.log({
       message: 'Response recieved',
       // ...this.dumpState(),
-      'message.term': message.term,
-      'message.granted': message.granted,
+      'response.term': message.term,
+      'response.granted': message.granted,
     });
     if (!message.granted) {
       span?.addTags({ error: 'not granted' });
@@ -491,10 +491,10 @@ export class RaftServer {
     });
     span.addTags({
       ...this.dumpState(),
-      'message.term': message.term,
-      'message.prevIndex': message.prevIndex,
-      'message.entries': message.entries,
-      'message.commitIndex': message.commitIndex,
+      'request.term': message.term,
+      'request.prevIndex': message.prevIndex,
+      'request.entries': message.entries,
+      'request.commitIndex': message.commitIndex,
     });
 
     this.debug(
@@ -564,9 +564,9 @@ export class RaftServer {
     span?.log({
       message: 'Response recieved',
       // ...this.dumpState(),
-      'message.term': message.term,
-      'message.success': message.success,
-      'message.matchIndex': message.matchIndex,
+      'response.term': message.term,
+      'response.success': message.success,
+      'response.matchIndex': message.matchIndex,
     });
     if (!message.success) {
       span?.addTags({ error: 'not success' });
@@ -706,12 +706,12 @@ export class RaftServer {
 
   private dumpState() {
     return {
-      'this.state': this.state,
-      'this.term': this.term,
-      'this.votedFor': this.votedFor,
-      'this.logs': this.log.map((l, i) => l.value).join(','),
-      'this.logsLength': this.log.length,
-      'this.commitIndex': this.commitIndex,
+      'self.state': this.state,
+      'self.term': this.term,
+      'self.votedFor': this.votedFor,
+      'self.logs': this.log.map((l, i) => l.value).join(','),
+      'self.logsLength': this.log.length,
+      'self.commitIndex': this.commitIndex,
     };
   }
 
