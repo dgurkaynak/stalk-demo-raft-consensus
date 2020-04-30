@@ -61,7 +61,7 @@ export function toZipkinJSON(
 
   const tags: { [key: string]: string } = {};
   for (let name in constantTags) {
-    tags[name] = data.tags[name] + '';
+    tags[name] = constantTags[name] + '';
   }
   for (let name in data.tags) {
     tags[name] = data.tags[name] + '';
