@@ -2,7 +2,7 @@ import fetch from 'node-fetch';
 import * as opentracing from 'opentracing';
 
 export class ZipkinReporter {
-  private zipkinSpans: any[];
+  private zipkinSpans: any[] = [];
   private reportTimeoutId: number;
 
   constructor(private reportUrl: string) {
@@ -28,6 +28,7 @@ export class ZipkinReporter {
   async report() {
     const spansToReport = this.zipkinSpans.slice();
     if (spansToReport.length == 0) {
+      this.reportTimeoutId = setTimeout(() => this.report(), 1000) as any;
       return;
     }
 
@@ -38,6 +39,7 @@ export class ZipkinReporter {
     });
 
     if (response.ok) {
+      console.log(`[zipkin] Reported ${spansToReport.length} span(s)`);
       spansToReport.forEach((s) => {
         const index = this.zipkinSpans.indexOf(s);
         index > -1 && this.zipkinSpans.splice(index, 1);
@@ -97,7 +99,7 @@ export function toZipkinJSON(
   // So we're setting any referenced span as parent span :/
   const parentId =
     data.references.length > 0
-      ? data.references[0].referencedContext.toSpanId()
+      ? data.references[0].referencedContext.spanId
       : null;
   if (parentId) (output as any).parentId = parentId;
 

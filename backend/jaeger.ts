@@ -47,6 +47,8 @@ export class JaegerReporter {
   }
 
   async report() {
+    let reportedSpanCount = 0;
+
     for (const processDataItem of this.processDataItems) {
       if (processDataItem.spansThrift.length == 0) {
         continue;
@@ -89,6 +91,7 @@ export class JaegerReporter {
         });
 
         if (response.ok) {
+          reportedSpanCount += spansToReport.length;
           spansToReport.forEach((s) => {
             const index = processDataItem.spansThrift.indexOf(s);
             index > -1 && processDataItem.spansThrift.splice(index, 1);
@@ -98,6 +101,10 @@ export class JaegerReporter {
         console.error('Could not report to jaeger', err);
       }
     } // for loop end
+
+    if (reportedSpanCount > 0) {
+      console.log(`[jaeger] Reported ${reportedSpanCount} span(s)`);
+    }
 
     this.reportTimeoutId = setTimeout(() => this.report(), 1000) as any;
   }
