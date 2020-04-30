@@ -2,7 +2,16 @@
   "name": "stalk-demo-raft-consensus",
   "version": "0.1.0",
   "description": "Raft Consensus - Log Replication",
-  "main": "server.js",
+  "homepage": "https://github.com/dgurkaynak/stalk-demo-raft-consensus",
+  "repository": "github:dgurkaynak/stalk-demo-raft-consensus",
+  "private": true,
+  "license": "MIT",
+  "author": {
+    "name": "Deniz Gurkaynak",
+    "email": "dgurkaynak@gmail.com",
+    "url": "https://github.com/dgurkaynak"
+  },
+  "main": "dist/backend.js",
   "scripts": {
     "build": "webpack --mode production",
     "build:watch": "webpack --mode development --watch",
@@ -10,9 +19,6 @@
     "start:backend": "node dist/backend.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "Deniz Gurkaynak <dgurkaynak@gmail.com>",
-  "license": "MIT",
   "devDependencies": {
     "@ant-design/icons": "^4.0.6",
     "@avinlab/react-flash-change": "^1.2.0",
@@ -33,7 +39,6 @@
     "events": "^3.1.0",
     "html-webpack-plugin": "^4.2.0",
     "lodash": "^4.17.15",
-    "opentracing": "^0.14.4",
     "prettier": "^2.0.4",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
@@ -49,6 +54,7 @@
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "node-fetch": "^2.6.0",
-    "object-hash": "^2.0.3"
+    "object-hash": "^2.0.3",
+    "opentracing": "^0.14.4"
   }
 }
