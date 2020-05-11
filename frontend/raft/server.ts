@@ -379,7 +379,7 @@ export class RaftServer {
     this.sendMessage(response);
 
     span.addTags({ granted });
-    span.finish();
+    setTimeout(() => span.finish(), 25);
   }
 
   // Can be in 3 states
@@ -554,7 +554,7 @@ export class RaftServer {
     this.sendMessage(response);
 
     span.addTags({ success, matchIndex });
-    span.finish();
+    setTimeout(() => span.finish(), 50);
   }
 
   // Can be in 3 states
