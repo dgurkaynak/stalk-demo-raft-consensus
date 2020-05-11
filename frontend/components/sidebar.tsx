@@ -2,8 +2,8 @@ import React from 'react';
 import { Button, Space } from 'antd';
 import FlashChange from '@avinlab/react-flash-change';
 import times from 'lodash/times';
-import { cluster } from '../globals';
-import { SESSION_ID } from '../session-id';
+import { CLUSTER } from '../globals/cluster';
+import { SESSION_ID } from '../globals/session-id';
 import {
   RaftServerState,
   RaftServerEvents,
@@ -44,13 +44,13 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
       leaderId: null,
       logs: [],
       turnedOnServerCount: 0,
-      turnedOffServerCount: cluster.servers.length,
+      turnedOffServerCount: CLUSTER.servers.length,
     };
   }
 
   componentDidMount() {
     // Bind events that indicates server state (possible) change
-    cluster.servers.forEach((server) => {
+    CLUSTER.servers.forEach((server) => {
       server.ee.addListener(
         RaftServerEvents.STARTED_NEW_ELECTION,
         this.binded.updateLeader
@@ -84,7 +84,7 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
 
   componentWillUnmount() {
     // Unbind events
-    cluster.servers.forEach((server) => {
+    CLUSTER.servers.forEach((server) => {
       server.ee.removeListener(
         RaftServerEvents.STARTED_NEW_ELECTION,
         this.binded.updateLeader
@@ -117,7 +117,7 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
   }
 
   updateLeader() {
-    const leader = cluster.servers.find(
+    const leader = CLUSTER.servers.find(
       (s) => s.state == RaftServerState.LEADER
     );
     this.setState({
@@ -130,7 +130,7 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
 
     const logs: { [key: string]: RaftLogItem }[] = [];
 
-    cluster.servers.forEach((server) => {
+    CLUSTER.servers.forEach((server) => {
       server.log.forEach((logItem, index) => {
         if (!logs[index]) {
           logs[index] = {};
@@ -150,7 +150,7 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
     const turnedOnServers: RaftServer[] = [];
     const turnedOffServers: RaftServer[] = [];
 
-    cluster.servers.forEach((server) => {
+    CLUSTER.servers.forEach((server) => {
       if (server.state == RaftServerState.STOPPED) {
         turnedOffServers.push(server);
         return;
@@ -166,17 +166,17 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
   }
 
   onTurnOnAllServersClicked() {
-    cluster.servers.forEach((s) => s.start());
+    CLUSTER.servers.forEach((s) => s.start());
   }
 
   onTurnOffAllServersClicked() {
-    cluster.servers.forEach((s) => s.stop());
+    CLUSTER.servers.forEach((s) => s.stop());
   }
 
   onEmojiClick(emoji: string) {
     const { leaderId } = this.state;
     if (!leaderId) return;
-    const server = cluster.servers.find((s) => s.id == leaderId);
+    const server = CLUSTER.servers.find((s) => s.id == leaderId);
     server?.request(emoji);
   }
 
@@ -208,7 +208,7 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
             type="primary"
             block
             onClick={this.onTurnOnAllServersClicked}
-            disabled={turnedOnServerCount == cluster.servers.length}
+            disabled={turnedOnServerCount == CLUSTER.servers.length}
           >
             Turn ON All Servers
           </Button>
@@ -217,7 +217,7 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
             block
             danger
             onClick={this.onTurnOffAllServersClicked}
-            disabled={turnedOffServerCount == cluster.servers.length}
+            disabled={turnedOffServerCount == CLUSTER.servers.length}
           >
             Turn OFF All Servers
           </Button>
@@ -295,7 +295,7 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
                 <td style={{ textAlign: 'center', width: 25 }}>
                   <span style={styles.verticalText}></span>
                 </td>
-                {cluster.servers.map((server) => (
+                {CLUSTER.servers.map((server) => (
                   <td key={server.id} style={{ textAlign: 'center' }}>
                     <span style={styles.verticalText}>{server.id}</span>
                   </td>
@@ -309,7 +309,7 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
                 return (
                   <tr key={`log-row-${logIndex}`}>
                     <td style={{ textAlign: 'center' }}>{logIndex + 1}</td>
-                    {cluster.servers.map((server) => (
+                    {CLUSTER.servers.map((server) => (
                       <td
                         key={server.id}
                         style={{

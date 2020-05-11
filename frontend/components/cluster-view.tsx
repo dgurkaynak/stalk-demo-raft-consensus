@@ -1,8 +1,7 @@
 import React from 'react';
 import times from 'lodash/times';
-import { RaftServer, RaftServerEvents, RaftServerState } from '../raft/server';
 import { ServerView } from './server-view';
-import { cluster } from '../globals';
+import { CLUSTER } from '../globals/cluster';
 import { MessagingView } from './messaging-view';
 
 const POINT_DIAMETER = 10;
@@ -84,7 +83,7 @@ export class ClusterView extends React.Component<
 
     const pointCoordinates: any = [];
 
-    const numOfServer = cluster.servers.length;
+    const numOfServer = CLUSTER.servers.length;
     const angleOffset = (2 * Math.PI) / numOfServer;
     times(numOfServer, (i) => {
       const angle = Math.PI / 2 + i * angleOffset;
@@ -202,7 +201,7 @@ export class ClusterView extends React.Component<
         <MessagingView ref={this.messagingViewRef} />
 
         {/* Server points (messaging dots) */}
-        {cluster.servers.map((server, i) => {
+        {CLUSTER.servers.map((server, i) => {
           const coord = serverCoordinates[i];
           return (
             <div
@@ -221,7 +220,7 @@ export class ClusterView extends React.Component<
         })}
 
         {/* Server panels */}
-        {cluster.servers.map((server, i) => {
+        {CLUSTER.servers.map((server, i) => {
           const coord = serverCoordinates[i];
           let top = 0;
           let left = 0;

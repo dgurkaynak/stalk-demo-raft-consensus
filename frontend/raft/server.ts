@@ -1,4 +1,4 @@
-import { SESSION_ID } from '../session-id';
+import { SESSION_ID } from '../globals/session-id';
 import debug from 'debug';
 import { EventEmitter } from 'events';
 import * as opentracing from 'opentracing';

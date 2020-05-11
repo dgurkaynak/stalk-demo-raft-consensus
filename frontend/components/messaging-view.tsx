@@ -1,7 +1,7 @@
 import React from 'react';
 import forEachRight from 'lodash/forEachRight';
 import { RaftServerEvents, RaftMessage } from '../raft/server';
-import { cluster } from '../globals';
+import { CLUSTER } from '../globals/cluster';
 
 const MESSAGE_DIAMETER = 16;
 
@@ -39,7 +39,7 @@ export class MessagingView extends React.Component<
   }
 
   componentDidMount() {
-    cluster.servers.forEach((server) => {
+    CLUSTER.servers.forEach((server) => {
       server.ee.addListener(
         RaftServerEvents.SENT_MESSAGE,
         this.binded.onMessage
@@ -50,7 +50,7 @@ export class MessagingView extends React.Component<
   }
 
   componentWillUnmount() {
-    cluster.servers.forEach((server) => {
+    CLUSTER.servers.forEach((server) => {
       server.ee.removeListener(
         RaftServerEvents.SENT_MESSAGE,
         this.binded.onMessage
@@ -69,7 +69,7 @@ export class MessagingView extends React.Component<
   ) {
     this.serverCoordinates = {};
 
-    cluster.servers.forEach((server, index) => {
+    CLUSTER.servers.forEach((server, index) => {
       this.serverCoordinates[server.id] = {
         x: data[index].pointX,
         y: data[index].pointY,
