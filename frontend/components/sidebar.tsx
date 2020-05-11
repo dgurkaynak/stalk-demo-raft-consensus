@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Space } from 'antd';
+import { Button, Space, Modal, Slider, Row, Col, Dropdown, Menu } from 'antd';
 import FlashChange from '@avinlab/react-flash-change';
 import times from 'lodash/times';
 import { CLUSTER } from '../globals/cluster';
@@ -10,6 +10,7 @@ import {
   RaftLogItem,
   RaftServer,
 } from '../raft/server';
+import { SettingOutlined, DownOutlined } from '@ant-design/icons';
 
 const styles: any = {
   verticalText: {
@@ -26,6 +27,7 @@ export interface SidebarState {
   logs: { [key: string]: RaftLogItem }[];
   turnedOnServerCount: number;
   turnedOffServerCount: number;
+  isSimulationSettingsVisible: boolean;
 }
 
 export class Sidebar extends React.Component<SidebarProps, SidebarState> {
@@ -35,6 +37,11 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
     updateLeader: this.updateLeader.bind(this),
     updateLogs: this.updateLogs.bind(this),
     updateTurnOnOffCounts: this.updateTurnOnOffCounts.bind(this),
+    onSimulationSettingsClicked: this.onSimulationSettingsClicked.bind(this),
+    onSimulationSettingsModalOk: this.onSimulationSettingsModalOk.bind(this),
+    onSimulationSettingsModalCancel: this.onSimulationSettingsModalCancel.bind(
+      this
+    ),
   };
 
   constructor(props: SidebarProps) {
@@ -45,6 +52,7 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
       logs: [],
       turnedOnServerCount: 0,
       turnedOffServerCount: CLUSTER.servers.length,
+      isSimulationSettingsVisible: false,
     };
   }
 
@@ -180,6 +188,20 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
     server?.request(emoji);
   }
 
+  onSimulationSettingsClicked() {
+    this.setState({ isSimulationSettingsVisible: true });
+  }
+
+  onSimulationSettingsModalOk() {
+    // TODO: Set settings
+    this.setState({ isSimulationSettingsVisible: false });
+  }
+
+  onSimulationSettingsModalCancel() {
+    // TODO: Reset settings
+    this.setState({ isSimulationSettingsVisible: false });
+  }
+
   render() {
     const { style } = this.props;
     const {
@@ -204,6 +226,17 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
           >
             Session ID: {SESSION_ID}
           </div>
+          <div style={{ textAlign: 'center' }}>
+            <Button
+              type="link"
+              icon={<SettingOutlined />}
+              size="small"
+              disabled={turnedOffServerCount != CLUSTER.servers.length}
+              onClick={this.binded.onSimulationSettingsClicked}
+            >
+              Simulation Settings
+            </Button>
+          </div>
           <Button
             type="primary"
             block
@@ -222,6 +255,9 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
             Turn OFF All Servers
           </Button>
         </Space>
+
+        {/* Simulation settings modal */}
+        {this.renderSimulationSettingsModal()}
 
         {/* Leader section */}
         <div>
@@ -336,4 +372,114 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
       </div>
     );
   }
+
+  renderSimulationSettingsModal() {
+    const labelStyle = {
+      textAlign: 'right',
+      paddingRight: 15,
+    } as React.CSSProperties;
+    const valueStyle = {
+      paddingLeft: 15,
+    } as React.CSSProperties;
+
+    return (
+      <Modal
+        title="Simulation Settings"
+        visible={this.state.isSimulationSettingsVisible}
+        onOk={this.binded.onSimulationSettingsModalOk}
+        onCancel={this.binded.onSimulationSettingsModalCancel}
+        width={700}
+      >
+        <div style={{ textAlign: 'center', marginBottom: 15 }}>
+          <Dropdown
+            overlay={
+              <Menu>
+                <Menu.Item key="0">Slowed Down (Default)</Menu.Item>
+                <Menu.Item key="1">Realistic</Menu.Item>
+              </Menu>
+            }
+            placement="bottomCenter"
+          >
+            <a
+              className="ant-dropdown-link"
+              onClick={(e) => e.preventDefault()}
+            >
+              Presets <DownOutlined />
+            </a>
+          </Dropdown>
+        </div>
+
+        <Row align="middle">
+          <Col span={5} style={labelStyle}>
+            Message Delay:
+          </Col>
+          <Col span={14}>
+            <Slider
+              range
+              min={50}
+              max={1500}
+              defaultValue={[20, 50]}
+              tipFormatter={sliderTipFormatter as any}
+            />
+          </Col>
+          <Col span={5} style={valueStyle}>
+            1000-1500 ms
+          </Col>
+        </Row>
+        <Row align="middle">
+          <Col span={5} style={labelStyle}>
+            RPC Timeout:
+          </Col>
+          <Col span={14}>
+            <Slider
+              min={250}
+              max={5000}
+              defaultValue={50}
+              tipFormatter={sliderTipFormatter as any}
+            />
+          </Col>
+          <Col span={5} style={valueStyle}>
+            5000 ms
+          </Col>
+        </Row>
+        <Row align="middle">
+          <Col span={5} style={labelStyle}>
+            Election Timeout:
+          </Col>
+          <Col span={14}>
+            <Slider
+              range
+              min={700}
+              max={20000}
+              defaultValue={[20, 50]}
+              tipFormatter={sliderTipFormatter as any}
+            />
+          </Col>
+          <Col span={5} style={valueStyle}>
+            10000-20000 ms
+          </Col>
+        </Row>
+        <Row align="middle">
+          <Col span={5} style={labelStyle}>
+            Heartbeat Interval:
+          </Col>
+          <Col span={14}>
+            <Slider
+              min={200}
+              max={3000}
+              defaultValue={50}
+              tipFormatter={sliderTipFormatter as any}
+            />
+          </Col>
+          <Col span={5} style={valueStyle}>
+            3000 ms
+          </Col>
+        </Row>
+      </Modal>
+    );
+  }
+}
+
+function sliderTipFormatter(value: string) {
+  return `${value} ms`;
 }
