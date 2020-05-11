@@ -280,6 +280,7 @@ export class RaftServer {
     }
   }
 
+  // TODO: parentSpan can be null
   private stepDown(parentSpan: Span, term: number) {
     this.state = RaftServerState.FOLLOWER;
     this.term = term;
@@ -293,6 +294,7 @@ export class RaftServer {
     // this.advanceCommitIndex();
   }
 
+  // TODO: parentSpan can be null
   private sendRequestVoteMessage(parentSpan: Span, peerId: string) {
     const span = this.tracer.startSpan('requestVote', {
       references: [opentracing.followsFrom(parentSpan.context())],
@@ -439,6 +441,7 @@ export class RaftServer {
     span?.finish();
   }
 
+  // TODO: parentSpan can be null
   private sendAppendEntriesMessage(parentSpan: Span, peerId: string) {
     const peer = this.peers.get(peerId);
     if (!peer) return;
