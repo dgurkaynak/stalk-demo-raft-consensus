@@ -11,6 +11,7 @@ import {
   RaftServer,
 } from '../raft/server';
 import { SettingOutlined, DownOutlined } from '@ant-design/icons';
+import cfg, { getDefaults, getRealistic } from '../globals/server-config';
 
 const styles: any = {
   verticalText: {
@@ -28,6 +29,10 @@ export interface SidebarState {
   turnedOnServerCount: number;
   turnedOffServerCount: number;
   isSimulationSettingsVisible: boolean;
+  simMessageDelayRange: [number, number];
+  simRpcTimeout: number;
+  simElectionTimeoutRange: [number, number];
+  simHeartbeatInterval: number;
 }
 
 export class Sidebar extends React.Component<SidebarProps, SidebarState> {
@@ -42,6 +47,12 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
     onSimulationSettingsModalCancel: this.onSimulationSettingsModalCancel.bind(
       this
     ),
+    onMessageDelaySliderChange: this.onMessageDelaySliderChange.bind(this),
+    onRpcTimeoutSliderChange: this.onRpcTimeoutSliderChange.bind(this),
+    onElectionTimeoutSliderChange: this.onElectionTimeoutSliderChange.bind(
+      this
+    ),
+    onHeartbeatSliderChange: this.onHeartbeatSliderChange.bind(this),
   };
 
   constructor(props: SidebarProps) {
@@ -53,6 +64,13 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
       turnedOnServerCount: 0,
       turnedOffServerCount: CLUSTER.servers.length,
       isSimulationSettingsVisible: false,
+      simMessageDelayRange: [cfg.MIN_MESSAGE_DELAY, cfg.MAX_MESSAGE_DELAY],
+      simRpcTimeout: cfg.RPC_TIMEOUT,
+      simElectionTimeoutRange: [
+        cfg.MIN_ELECTION_TIMEOUT,
+        cfg.MAX_ELECTION_TIMEOUT,
+      ],
+      simHeartbeatInterval: cfg.HEARTBEAT_INTERVAL,
     };
   }
 
@@ -193,13 +211,69 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
   }
 
   onSimulationSettingsModalOk() {
-    // TODO: Set settings
-    this.setState({ isSimulationSettingsVisible: false });
+    cfg.MIN_MESSAGE_DELAY = this.state.simMessageDelayRange[0];
+    cfg.MAX_MESSAGE_DELAY = this.state.simMessageDelayRange[1];
+    cfg.RPC_TIMEOUT = this.state.simRpcTimeout;
+    cfg.MIN_ELECTION_TIMEOUT = this.state.simElectionTimeoutRange[0];
+    cfg.MAX_ELECTION_TIMEOUT = this.state.simElectionTimeoutRange[1];
+    cfg.HEARTBEAT_INTERVAL = this.state.simHeartbeatInterval;
+
+    this.setState({
+      isSimulationSettingsVisible: false,
+      simMessageDelayRange: [cfg.MIN_MESSAGE_DELAY, cfg.MAX_MESSAGE_DELAY],
+      simRpcTimeout: cfg.RPC_TIMEOUT,
+      simElectionTimeoutRange: [
+        cfg.MIN_ELECTION_TIMEOUT,
+        cfg.MAX_ELECTION_TIMEOUT,
+      ],
+      simHeartbeatInterval: cfg.HEARTBEAT_INTERVAL,
+    });
   }
 
   onSimulationSettingsModalCancel() {
-    // TODO: Reset settings
-    this.setState({ isSimulationSettingsVisible: false });
+    this.setState({
+      isSimulationSettingsVisible: false,
+      simMessageDelayRange: [cfg.MIN_MESSAGE_DELAY, cfg.MAX_MESSAGE_DELAY],
+      simRpcTimeout: cfg.RPC_TIMEOUT,
+      simElectionTimeoutRange: [
+        cfg.MIN_ELECTION_TIMEOUT,
+        cfg.MAX_ELECTION_TIMEOUT,
+      ],
+      simHeartbeatInterval: cfg.HEARTBEAT_INTERVAL,
+    });
+  }
+
+  onMessageDelaySliderChange(range: [number, number]) {
+    this.setState({ simMessageDelayRange: range });
+  }
+
+  onRpcTimeoutSliderChange(val: number) {
+    this.setState({ simRpcTimeout: val });
+  }
+
+  onElectionTimeoutSliderChange(range: [number, number]) {
+    this.setState({ simElectionTimeoutRange: range });
+  }
+
+  onHeartbeatSliderChange(val: number) {
+    this.setState({ simHeartbeatInterval: val });
+  }
+
+  onPresetDropdownClick(preset: 'default' | 'realistic') {
+    const presetCfg = preset == 'realistic' ? getRealistic() : getDefaults();
+
+    this.setState({
+      simMessageDelayRange: [
+        presetCfg.MIN_MESSAGE_DELAY,
+        presetCfg.MAX_MESSAGE_DELAY,
+      ],
+      simRpcTimeout: presetCfg.RPC_TIMEOUT,
+      simElectionTimeoutRange: [
+        presetCfg.MIN_ELECTION_TIMEOUT,
+        presetCfg.MAX_ELECTION_TIMEOUT,
+      ],
+      simHeartbeatInterval: presetCfg.HEARTBEAT_INTERVAL,
+    });
   }
 
   render() {
@@ -394,8 +468,18 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
           <Dropdown
             overlay={
               <Menu>
-                <Menu.Item key="0">Slowed Down (Default)</Menu.Item>
-                <Menu.Item key="1">Realistic</Menu.Item>
+                <Menu.Item
+                  key="0"
+                  onClick={() => this.onPresetDropdownClick('default')}
+                >
+                  Slowed Down (Default)
+                </Menu.Item>
+                <Menu.Item
+                  key="1"
+                  onClick={() => this.onPresetDropdownClick('realistic')}
+                >
+                  Realistic
+                </Menu.Item>
               </Menu>
             }
             placement="bottomCenter"
@@ -418,12 +502,13 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
               range
               min={50}
               max={1500}
-              defaultValue={[20, 50]}
+              value={this.state.simMessageDelayRange}
               tipFormatter={sliderTipFormatter as any}
+              onChange={this.binded.onMessageDelaySliderChange}
             />
           </Col>
           <Col span={5} style={valueStyle}>
-            1000-1500 ms
+            {this.state.simMessageDelayRange.join('-')} ms
           </Col>
         </Row>
         <Row align="middle">
@@ -434,12 +519,13 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
             <Slider
               min={250}
               max={5000}
-              defaultValue={50}
+              value={this.state.simRpcTimeout}
               tipFormatter={sliderTipFormatter as any}
+              onChange={this.binded.onRpcTimeoutSliderChange}
             />
           </Col>
           <Col span={5} style={valueStyle}>
-            5000 ms
+            {this.state.simRpcTimeout} ms
           </Col>
         </Row>
         <Row align="middle">
@@ -451,12 +537,13 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
               range
               min={700}
               max={20000}
-              defaultValue={[20, 50]}
+              value={this.state.simElectionTimeoutRange}
               tipFormatter={sliderTipFormatter as any}
+              onChange={this.binded.onElectionTimeoutSliderChange}
             />
           </Col>
           <Col span={5} style={valueStyle}>
-            10000-20000 ms
+            {this.state.simElectionTimeoutRange.join('-')} ms
           </Col>
         </Row>
         <Row align="middle">
@@ -467,12 +554,13 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
             <Slider
               min={200}
               max={3000}
-              defaultValue={50}
+              value={this.state.simHeartbeatInterval}
               tipFormatter={sliderTipFormatter as any}
+              onChange={this.binded.onHeartbeatSliderChange}
             />
           </Col>
           <Col span={5} style={valueStyle}>
-            3000 ms
+            {this.state.simHeartbeatInterval} ms
           </Col>
         </Row>
       </Modal>
