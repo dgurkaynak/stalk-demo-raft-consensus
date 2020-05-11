@@ -213,6 +213,9 @@ export class ServerView extends React.Component<
 
     return (
       <div
+        className={`animate__animated animate__fast ${
+          state == RaftServerState.LEADER ? 'animate__tada' : ''
+        }`}
         style={{
           transition: 'opacity 100ms',
           opacity: state == RaftServerState.STOPPED ? 0.5 : 1,
@@ -241,13 +244,17 @@ export class ServerView extends React.Component<
               <span
                 style={{ cursor: 'pointer', padding: 3 }}
                 onClick={this.binded.onPowerToggleClicked}
-              ><PoweroffOutlined /></span>
+              >
+                <PoweroffOutlined />
+              </span>
             </Tooltip>
             <Tooltip title="Trigger Election Timer" mouseEnterDelay={1}>
               <span
                 style={{ cursor: 'pointer', padding: 3 }}
                 onClick={this.binded.onTriggerElectionButtonClicked}
-              ><BellOutlined /></span>
+              >
+                <BellOutlined />
+              </span>
             </Tooltip>
           </div>
         </div>

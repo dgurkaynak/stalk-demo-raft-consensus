@@ -4,6 +4,7 @@ import { ClusterView } from './components/cluster-view';
 import { Sidebar } from './components/sidebar';
 
 import 'antd/dist/antd.css';
+import 'animate.css/animate.min.css';
 import './index.css';
 
 function App() {
