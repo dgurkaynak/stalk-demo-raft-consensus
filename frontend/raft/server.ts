@@ -4,24 +4,7 @@ import { EventEmitter } from 'events';
 import * as opentracing from 'opentracing';
 import { Tracer } from '../tracing/tracer';
 import { Span } from '../tracing/span';
-
-// Extremely slow-downed for visulatization
-// export const MIN_MESSAGE_DELAY = 1000;
-// export const MAX_MESSAGE_DELAY = 1500;
-// export const RPC_TIMEOUT = 5000;
-// export const MIN_ELECTION_TIMEOUT = 10000;
-// export const MAX_ELECTION_TIMEOUT = 20000;
-// export const HEARTBEAT_INTERVAL = 3000;
-// export const BATCH_SIZE = 1;
-
-// More realistic scenario
-export const MIN_MESSAGE_DELAY = 30;
-export const MAX_MESSAGE_DELAY = 50;
-export const RPC_TIMEOUT = 150;
-export const MIN_ELECTION_TIMEOUT = 500;
-export const MAX_ELECTION_TIMEOUT = 600;
-export const HEARTBEAT_INTERVAL = 100;
-export const BATCH_SIZE = 1;
+import cfg from '../globals/server-config';
 
 export enum RaftServerState {
   FOLLOWER = 'follower',
@@ -162,8 +145,8 @@ export class RaftServer {
     if (!peer) return;
 
     const delay =
-      MIN_MESSAGE_DELAY +
-      Math.random() * (MAX_MESSAGE_DELAY - MIN_MESSAGE_DELAY);
+      cfg.MIN_MESSAGE_DELAY +
+      Math.random() * (cfg.MAX_MESSAGE_DELAY - cfg.MIN_MESSAGE_DELAY);
     setTimeout(() => peer.server.handleMessage(message), delay);
 
     this.debug(`Sending ${message.type} message to ${message.to}`, message);
@@ -216,8 +199,8 @@ export class RaftServer {
   private reloadElectionTimeout(parentSpan: Span) {
     clearTimeout(this.electionTimeoutId);
     const delay =
-      MIN_ELECTION_TIMEOUT +
-      Math.random() * (MAX_ELECTION_TIMEOUT - MIN_ELECTION_TIMEOUT);
+      cfg.MIN_ELECTION_TIMEOUT +
+      Math.random() * (cfg.MAX_ELECTION_TIMEOUT - cfg.MIN_ELECTION_TIMEOUT);
     this.electionTimeoutId = setTimeout(
       () => this.handleElectionTimeout(parentSpan, true),
       delay
@@ -319,7 +302,7 @@ export class RaftServer {
     this.tracer.inject(span, opentracing.FORMAT_TEXT_MAP, message);
     this.rpcSpans[message.id] = span;
 
-    this.sendMessage(message, RPC_TIMEOUT);
+    this.sendMessage(message, cfg.RPC_TIMEOUT);
   }
 
   // Can be in 3 states
@@ -451,7 +434,7 @@ export class RaftServer {
     });
 
     const prevIndex = peer.nextIndex - 1;
-    let lastIndex = Math.min(prevIndex + BATCH_SIZE, this.log.length);
+    let lastIndex = Math.min(prevIndex + cfg.BATCH_SIZE, this.log.length);
     if (peer.matchIndex + 1 < peer.nextIndex) lastIndex = prevIndex;
 
     const message: AppendEntriesMessage = {
@@ -477,7 +460,7 @@ export class RaftServer {
     this.tracer.inject(span, opentracing.FORMAT_TEXT_MAP, message);
     this.rpcSpans[message.id] = span;
 
-    this.sendMessage(message, RPC_TIMEOUT);
+    this.sendMessage(message, cfg.RPC_TIMEOUT);
   }
 
   // Can be in 3 states
@@ -619,7 +602,7 @@ export class RaftServer {
           if (this.state == RaftServerState.LEADER) {
             this.sendAppendEntriesMessage(span, peerId);
           }
-        }, HEARTBEAT_INTERVAL) as any;
+        }, cfg.HEARTBEAT_INTERVAL) as any;
       }
     }
 
