@@ -6,22 +6,22 @@ import { Tracer } from '../tracing/tracer';
 import { Span } from '../tracing/span';
 
 // Extremely slow-downed for visulatization
-export const MIN_MESSAGE_DELAY = 1000;
-export const MAX_MESSAGE_DELAY = 1500;
-export const RPC_TIMEOUT = 5000;
-export const MIN_ELECTION_TIMEOUT = 10000;
-export const MAX_ELECTION_TIMEOUT = 20000;
-export const HEARTBEAT_INTERVAL = 3000;
-export const BATCH_SIZE = 1;
+// export const MIN_MESSAGE_DELAY = 1000;
+// export const MAX_MESSAGE_DELAY = 1500;
+// export const RPC_TIMEOUT = 5000;
+// export const MIN_ELECTION_TIMEOUT = 10000;
+// export const MAX_ELECTION_TIMEOUT = 20000;
+// export const HEARTBEAT_INTERVAL = 3000;
+// export const BATCH_SIZE = 1;
 
 // More realistic scenario
-// export const MIN_MESSAGE_DELAY = 50;
-// export const MAX_MESSAGE_DELAY = 150;
-// export const RPC_TIMEOUT = 400;
-// export const MIN_ELECTION_TIMEOUT = 1000;
-// export const MAX_ELECTION_TIMEOUT = 1200;
-// export const HEARTBEAT_INTERVAL = 300;
-// export const BATCH_SIZE = 1;
+export const MIN_MESSAGE_DELAY = 30;
+export const MAX_MESSAGE_DELAY = 50;
+export const RPC_TIMEOUT = 150;
+export const MIN_ELECTION_TIMEOUT = 500;
+export const MAX_ELECTION_TIMEOUT = 600;
+export const HEARTBEAT_INTERVAL = 100;
+export const BATCH_SIZE = 1;
 
 export enum RaftServerState {
   FOLLOWER = 'follower',
