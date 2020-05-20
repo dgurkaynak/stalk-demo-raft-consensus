@@ -2,7 +2,7 @@
 
 ![Demo](./demo.gif)
 
-This is a demo application, instrumented with OpenTracing API, which simulates *(a naive version of)* [Raft distributed consensus algorithm](https://en.wikipedia.org/wiki/Raft_(computer_science)). Heavily inspired from [ongardie/raftscope](https://github.com/ongardie/raftscope).
+This is a demo application, instrumented with OpenTracing API, which simulates *(a naive version of)* [Raft distributed consensus algorithm](https://en.wikipedia.org/wiki/Raft_(computer_science)). Heavily inspired by [ongardie/raftscope](https://github.com/ongardie/raftscope).
 
 It can send traces to Jaeger and Zipkin backends.
 
