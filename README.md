@@ -45,3 +45,5 @@ You need to have `node.js >= 10` installed on your machine.
   - For Jaeger: `JAEGER_COLLECTOR="http://x.x.x.x:14268/api/traces" npm run start:backend`
   - For Zipkin: `ZIPKIN_COLLECTOR="http://x.x.x.x:9411/api/v2/spans" npm run start:backend`
 - Open up `http://localhost:8080` in your browser
+
+> If you don't want to trace reporting stuff, and just want to play with raft consensus simulation: use `USE_NOOP_TRACER=true npm run build` env variable when building. This forces frontend code to use NOOP tracer. Then backend becomes useless, you can directly open up `dist/index.html` file in your browser.

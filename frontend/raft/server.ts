@@ -114,15 +114,17 @@ export class RaftServer {
 
   constructor(id: string) {
     this.id = id;
-    this.tracer = new Tracer({
-      process: {
-        serviceName: 'raft-server',
-        tags: {
-          name: this.id,
-          sessionId: SESSION_ID,
-        },
-      },
-    });
+    this.tracer = USE_NOOP_TRACER
+      ? new opentracing.Tracer()
+      : new Tracer({
+          process: {
+            serviceName: 'raft-server',
+            tags: {
+              name: this.id,
+              sessionId: SESSION_ID,
+            },
+          },
+        });
   }
 
   init(options: { peerServers: RaftServer[] }) {
@@ -210,7 +212,10 @@ export class RaftServer {
   }
 
   // Can be in 4 states
-  private handleElectionTimeout(parentSpan: opentracing.Span, doesFollowFrom = false) {
+  private handleElectionTimeout(
+    parentSpan: opentracing.Span,
+    doesFollowFrom = false
+  ) {
     if (this.state == RaftServerState.STOPPED) {
       return;
     }
@@ -424,7 +429,10 @@ export class RaftServer {
   }
 
   // TODO: parentSpan can be null
-  private sendAppendEntriesMessage(parentSpan: opentracing.Span, peerId: string) {
+  private sendAppendEntriesMessage(
+    parentSpan: opentracing.Span,
+    peerId: string
+  ) {
     const peer = this.peers.get(peerId);
     if (!peer) return;
 

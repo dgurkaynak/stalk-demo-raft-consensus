@@ -1,6 +1,7 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const nodeExternals = require('webpack-node-externals');
+const webpack = require('webpack');
 
 module.exports = [
   {
@@ -27,6 +28,9 @@ module.exports = [
       extensions: [ '.tsx', '.ts', '.js' ],
     },
     plugins: [
+      new webpack.DefinePlugin({
+        USE_NOOP_TRACER: JSON.stringify(!!process.env.USE_NOOP_TRACER)
+      }),
       new HtmlWebpackPlugin({
         template: path.resolve(__dirname, 'frontend/index.html'),
         hash: true
