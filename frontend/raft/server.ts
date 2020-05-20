@@ -3,7 +3,6 @@ import debug from 'debug';
 import { EventEmitter } from 'events';
 import * as opentracing from 'opentracing';
 import { Tracer } from '../tracing/tracer';
-import { Span } from '../tracing/span';
 import cfg from '../globals/server-config';
 
 export enum RaftServerState {
@@ -100,9 +99,9 @@ export class RaftServer {
   peers = new Map<string, ServerPeer>();
 
   private rpcTimeoutIds: { [key: string]: number } = {};
-  private rpcSpans: { [key: string]: Span } = {};
+  private rpcSpans: { [key: string]: opentracing.Span } = {};
   private electionTimeoutId: number;
-  private tracer: Tracer;
+  private tracer: opentracing.Tracer;
 
   /**
    * If you want to see debug messages:
@@ -196,7 +195,7 @@ export class RaftServer {
   }
 
   // child of
-  private reloadElectionTimeout(parentSpan: Span) {
+  private reloadElectionTimeout(parentSpan: opentracing.Span) {
     clearTimeout(this.electionTimeoutId);
     const delay =
       cfg.MIN_ELECTION_TIMEOUT +
@@ -211,7 +210,7 @@ export class RaftServer {
   }
 
   // Can be in 4 states
-  private handleElectionTimeout(parentSpan: Span, doesFollowFrom = false) {
+  private handleElectionTimeout(parentSpan: opentracing.Span, doesFollowFrom = false) {
     if (this.state == RaftServerState.STOPPED) {
       return;
     }
@@ -264,7 +263,7 @@ export class RaftServer {
   }
 
   // TODO: parentSpan can be null
-  private stepDown(parentSpan: Span, term: number) {
+  private stepDown(parentSpan: opentracing.Span, term: number) {
     this.state = RaftServerState.FOLLOWER;
     this.term = term;
     this.votedFor = null;
@@ -278,7 +277,7 @@ export class RaftServer {
   }
 
   // TODO: parentSpan can be null
-  private sendRequestVoteMessage(parentSpan: Span, peerId: string) {
+  private sendRequestVoteMessage(parentSpan: opentracing.Span, peerId: string) {
     const span = this.tracer.startSpan('requestVote', {
       references: [opentracing.followsFrom(parentSpan.context())],
     });
@@ -425,7 +424,7 @@ export class RaftServer {
   }
 
   // TODO: parentSpan can be null
-  private sendAppendEntriesMessage(parentSpan: Span, peerId: string) {
+  private sendAppendEntriesMessage(parentSpan: opentracing.Span, peerId: string) {
     const peer = this.peers.get(peerId);
     if (!peer) return;
 
