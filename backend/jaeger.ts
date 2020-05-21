@@ -96,9 +96,11 @@ export class JaegerReporter {
             const index = processDataItem.spansThrift.indexOf(s);
             index > -1 && processDataItem.spansThrift.splice(index, 1);
           });
+        } else {
+          console.error(`[jaeger] Could not report: ${response.status} - ${response.statusText}`);
         }
       } catch (err) {
-        console.error('Could not report to jaeger', err);
+        console.error('[jaeger] Could not report', err);
       }
     } // for loop end
 

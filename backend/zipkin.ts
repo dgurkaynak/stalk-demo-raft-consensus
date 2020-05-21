@@ -44,6 +44,8 @@ export class ZipkinReporter {
         const index = this.zipkinSpans.indexOf(s);
         index > -1 && this.zipkinSpans.splice(index, 1);
       });
+    } else {
+      console.error(`[zipkin] Could not report: ${response.status} - ${response.statusText}`);
     }
 
     this.reportTimeoutId = setTimeout(() => this.report(), 1000) as any;
