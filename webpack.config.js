@@ -4,7 +4,7 @@ const webpack = require('webpack');
 
 module.exports = [
   {
-    entry: './frontend/index.tsx',
+    entry: './src/index.tsx',
     target: 'web',
     devtool: 'source-map',
     module: {
@@ -28,12 +28,12 @@ module.exports = [
     },
     plugins: [
       new HtmlWebpackPlugin({
-        template: path.resolve(__dirname, 'frontend/index.html'),
+        template: path.resolve(__dirname, 'src/index.html'),
         hash: true
       })
     ],
     output: {
-      filename: 'frontend.js',
+      filename: 'index.js',
       path: path.resolve(__dirname, 'dist'),
     },
   }

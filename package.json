@@ -11,11 +11,11 @@
     "email": "dgurkaynak@gmail.com",
     "url": "https://github.com/dgurkaynak"
   },
-  "main": "",
+  "main": "src/index.tsx",
   "scripts": {
     "build": "webpack --mode production",
     "build:watch": "webpack --mode development --watch",
-    "format": "prettier --write \"frontend/**/*.ts\"",
+    "format": "prettier --write \"src/**/*.ts\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "devDependencies": {
