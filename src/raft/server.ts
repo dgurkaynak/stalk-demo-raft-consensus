@@ -1,9 +1,30 @@
-import { SESSION_ID } from '../globals/session-id';
 import debug from 'debug';
 import { EventEmitter } from 'events';
-import * as opentracing from 'opentracing';
-import { Tracer } from '../tracing/tracer';
+import * as opentelemetry from '@opentelemetry/api';
+import { BasicTracerProvider, ConsoleSpanExporter, SimpleSpanProcessor, BatchSpanProcessor } from '@opentelemetry/tracing';
+import { CollectorTraceExporter } from '@opentelemetry/exporter-collector';
 import cfg from '../globals/server-config';
+
+// Setup tracing
+const provider = new BasicTracerProvider();
+provider.addSpanProcessor(new SimpleSpanProcessor(new ConsoleSpanExporter()));
+// const exporter = new CollectorTraceExporter({
+//   // serviceName: 'basic-service', // TODO
+//   // url: '<opentelemetry-collector-url>', // url is optional and can be omitted - default is http://localhost:55681/v1/trace
+//   headers: {}, // an optional object containing custom headers to be sent with each request
+//   concurrencyLimit: 10, // an optional limit on pending requests
+// });
+// provider.addSpanProcessor(new BatchSpanProcessor(exporter, {
+//   // The maximum queue size. After the size is reached spans are dropped.
+//   maxQueueSize: 100,
+//   // The maximum batch size of every export. It must be smaller or equal to maxQueueSize.
+//   maxExportBatchSize: 10,
+//   // The interval between two consecutive exports
+//   scheduledDelayMillis: 500,
+//   // How long the export can run before it is cancelled
+//   exportTimeoutMillis: 30000,
+// }));
+provider.register();
 
 export enum RaftServerState {
   FOLLOWER = 'follower',
@@ -99,9 +120,9 @@ export class RaftServer {
   peers = new Map<string, ServerPeer>();
 
   private rpcTimeoutIds: { [key: string]: number } = {};
-  private rpcSpans: { [key: string]: opentracing.Span } = {};
+  private rpcSpans: { [key: string]: opentelemetry.Span } = {};
   private electionTimeoutId: number;
-  private tracer: opentracing.Tracer;
+  private tracer: opentelemetry.Tracer;
 
   /**
    * If you want to see debug messages:
@@ -110,19 +131,12 @@ export class RaftServer {
    * localStorage.debug = 'raft:*'
    * ```
    */
-  private debug = debug(`raft:server:${this.id}`);
+  private debug: debug.Debugger;
 
   constructor(id: string) {
     this.id = id;
-    this.tracer = new Tracer({
-      process: {
-        serviceName: 'raft-server',
-        tags: {
-          name: this.id,
-          sessionId: SESSION_ID,
-        },
-      },
-    });
+    this.debug = debug(`raft:server:${this.id}`);
+    this.tracer = opentelemetry.trace.getTracer(`raft-server-${this.id}`);
   }
 
   init(options: { peerServers: RaftServer[] }) {
@@ -195,7 +209,7 @@ export class RaftServer {
   }
 
   // child of
-  private reloadElectionTimeout(parentSpan: opentracing.Span) {
+  private reloadElectionTimeout(parentSpan: opentelemetry.Span) {
     clearTimeout(this.electionTimeoutId);
     const delay =
       cfg.MIN_ELECTION_TIMEOUT +
@@ -205,13 +219,13 @@ export class RaftServer {
       delay
     ) as any;
 
-    parentSpan.log({ message: `Election timeout reset`, timeout: delay });
+    parentSpan.addEvent('election-timeout-reset', { timeout: delay });
     this.ee.emit(RaftServerEvents.SET_ELECTION_TIMEOUT, { delay });
   }
 
   // Can be in 4 states
   private handleElectionTimeout(
-    parentSpan: opentracing.Span,
+    parentSpan: opentelemetry.Span,
     doesFollowFrom = false
   ) {
     if (this.state == RaftServerState.STOPPED) {
@@ -226,14 +240,9 @@ export class RaftServer {
       this.state == RaftServerState.CANDIDATE ||
       this.state == RaftServerState.FOLLOWER
     ) {
-      const span = doesFollowFrom
-        ? this.tracer.startSpan('startNewElection', {
-            references: [opentracing.followsFrom(parentSpan.context())],
-          })
-        : this.tracer.startSpan('startNewElection', {
-            childOf: parentSpan,
-          });
-      span.addTags({ ...this.dumpState() });
+      const ctx = opentelemetry.setSpan(opentelemetry.context.active(), parentSpan);
+      const span = this.tracer.startSpan('startNewElection', {}, ctx); // TODO: Handle doesFollowFrom == true
+      span.setAttributes({ ...this.dumpState() });
       this.debug(`Election timeout, starting a new one...`);
 
       // Starting new election
@@ -259,14 +268,14 @@ export class RaftServer {
         this.sendRequestVoteMessage(span, peerId);
       });
 
-      span.finish();
+      span.end();
 
       return;
     }
   }
 
   // TODO: parentSpan can be null
-  private stepDown(parentSpan: opentracing.Span, term: number) {
+  private stepDown(parentSpan: opentelemetry.Span, term: number) {
     this.state = RaftServerState.FOLLOWER;
     this.term = term;
     this.votedFor = null;
@@ -280,9 +289,11 @@ export class RaftServer {
   }
 
   // TODO: parentSpan can be null
-  private sendRequestVoteMessage(parentSpan: opentracing.Span, peerId: string) {
+  private sendRequestVoteMessage(parentSpan: opentelemetry.Span, peerId: string) {
     const span = this.tracer.startSpan('requestVote', {
-      references: [opentracing.followsFrom(parentSpan.context())],
+      links: [
+        { context: parentSpan.context() }
+      ],
     });
 
     const message: RequestVoteMessage = {
@@ -295,13 +306,14 @@ export class RaftServer {
       lastLogIndex: this.log.length,
     };
 
-    span.addTags({
+    span.setAttributes({
       to: peerId,
       term: this.term,
       lastLogTerm: message.lastLogTerm,
       lastLogIndex: message.lastLogIndex,
     });
-    this.tracer.inject(span, opentracing.FORMAT_TEXT_MAP, message);
+    const ctx = opentelemetry.setSpan(opentelemetry.context.active(), span);
+    opentelemetry.propagation.inject(ctx, message);
     this.rpcSpans[message.id] = span;
 
     this.sendMessage(message, cfg.RPC_TIMEOUT);
@@ -309,14 +321,9 @@ export class RaftServer {
 
   // Can be in 3 states
   private handleRequestVoteMessage(message: RequestVoteMessage) {
-    const parentSpanContext = this.tracer.extract(
-      opentracing.FORMAT_TEXT_MAP,
-      message
-    );
-    const span = this.tracer.startSpan('handleRequestVote', {
-      childOf: parentSpanContext,
-    });
-    span.addTags({
+    const ctx = opentelemetry.propagation.extract(opentelemetry.context.active(), message);
+    const span = this.tracer.startSpan('handleRequestVote', {}, ctx);
+    span.setAttributes({
       ...this.dumpState(),
       'request.term': message.term,
       'request.lastLogTerm': message.lastLogTerm,
@@ -331,7 +338,7 @@ export class RaftServer {
     if (this.term < message.term) {
       const logMessage = `Incoming term (${message.term}) is higher than my term (${this.term}), stepping down`;
       this.debug(logMessage);
-      span.log({ message: logMessage });
+      span.addEvent('stepping-down', { incomingTerm: message.term, myTerm: this.term });
       this.stepDown(span, message.term);
     }
 
@@ -346,7 +353,7 @@ export class RaftServer {
     ) {
       const logMessage = `Voted for ${message.from}`;
       this.debug(logMessage);
-      span.log({ message: logMessage });
+      span.addEvent('voted', {for: message.from});
 
       granted = true;
       this.votedFor = message.from;
@@ -365,22 +372,21 @@ export class RaftServer {
     };
     this.sendMessage(response);
 
-    span.addTags({ granted });
-    setTimeout(() => span.finish(), 25);
+    span.setAttributes({granted});
+    setTimeout(() => span.end(), 25);
   }
 
   // Can be in 3 states
   private handleRequestVoteResponse(message: RequestVoteResponseMessage) {
     const span = this.rpcSpans[message.id];
     delete this.rpcSpans[message.id];
-    span?.log({
-      message: 'Response recieved',
+    span?.addEvent('response-recieved', {
       // ...this.dumpState(),
       'response.term': message.term,
       'response.granted': message.granted,
     });
     if (!message.granted) {
-      span?.addTags({ error: 'not granted' });
+      span?.setAttributes({error: 'not granted'});
     }
 
     this.debug(
@@ -391,7 +397,7 @@ export class RaftServer {
     if (this.term < message.term) {
       const logMessage = `Incoming term (${message.term}) is higher than my term (${this.term}), stepping down`;
       this.debug(logMessage);
-      span?.log({ message: logMessage });
+      span.addEvent('stepping-down', { incomingTerm: message.term, myTerm: this.term });
       this.stepDown(span, message.term);
     }
 
@@ -409,7 +415,7 @@ export class RaftServer {
       });
 
       if (grantedVotes >= quorum) {
-        span?.log({ message: 'Became leader', grantedVotes, quorum });
+        span?.addEvent('become-leader', { grantedVotes, quorum });
         this.debug('Became LEADER');
         this.state = RaftServerState.LEADER;
         this.peers.forEach((peer, peerId) => {
@@ -423,19 +429,19 @@ export class RaftServer {
       }
     }
 
-    span?.finish();
+    span?.end();
   }
 
   // TODO: parentSpan can be null
   private sendAppendEntriesMessage(
-    parentSpan: opentracing.Span,
+    parentSpan: opentelemetry.Span,
     peerId: string
   ) {
     const peer = this.peers.get(peerId);
     if (!peer) return;
 
     const span = this.tracer.startSpan('appendEntries', {
-      references: [opentracing.followsFrom(parentSpan.context())],
+      links: [{ context: parentSpan.context() }],
     });
 
     const prevIndex = peer.nextIndex - 1;
@@ -454,7 +460,7 @@ export class RaftServer {
       commitIndex: Math.min(this.commitIndex, lastIndex),
     };
 
-    span.addTags({
+    span.setAttributes({
       to: peerId,
       term: this.term,
       prevIndex: message.prevIndex,
@@ -462,7 +468,8 @@ export class RaftServer {
       entries: message.entries.map((e) => e.value).join(','),
       commitIndex: message.commitIndex,
     });
-    this.tracer.inject(span, opentracing.FORMAT_TEXT_MAP, message);
+    const ctx = opentelemetry.setSpan(opentelemetry.context.active(), span);
+    opentelemetry.propagation.inject(ctx, message);
     this.rpcSpans[message.id] = span;
 
     this.sendMessage(message, cfg.RPC_TIMEOUT);
@@ -473,20 +480,15 @@ export class RaftServer {
     let success = false;
     let matchIndex = 0;
 
-    const parentSpanContext = this.tracer.extract(
-      opentracing.FORMAT_TEXT_MAP,
-      message
-    );
-    const span = this.tracer.startSpan('handleAppendEntries', {
-      childOf: parentSpanContext,
-    });
-    span.addTags({
+    const ctx = opentelemetry.propagation.extract(opentelemetry.context.active(), message);
+    const span = this.tracer.startSpan('handleAppendEntries', {}, ctx);
+    span.setAttributes({
       ...this.dumpState(),
       'request.term': message.term,
       'request.prevIndex': message.prevIndex,
       'request.entries': message.entries,
       'request.commitIndex': message.commitIndex,
-    });
+    } as any);
 
     this.debug(
       `Recieved ${message.type} message from ${message.from}`,
@@ -496,7 +498,7 @@ export class RaftServer {
     if (this.term < message.term) {
       const logMessage = `Incoming term (${message.term}) is higher than my term (${this.term}), stepping down`;
       this.debug(logMessage);
-      span.log({ message: logMessage });
+      span.addEvent('stepping-down', { incomingTerm: message.term, myTerm: this.term });
       this.stepDown(span, message.term);
     }
 
@@ -544,23 +546,22 @@ export class RaftServer {
     };
     this.sendMessage(response);
 
-    span.addTags({ success, matchIndex });
-    setTimeout(() => span.finish(), 50);
+    span.setAttributes({ success, matchIndex });
+    setTimeout(() => span.end(), 50);
   }
 
   // Can be in 3 states
   private handleAppendEntriesResponse(message: AppendEntriesResponseMessage) {
     const span = this.rpcSpans[message.id];
     delete this.rpcSpans[message.id];
-    span?.log({
-      message: 'Response recieved',
+    span?.addEvent('response-recieved', {
       // ...this.dumpState(),
       'response.term': message.term,
       'response.success': message.success,
       'response.matchIndex': message.matchIndex,
     });
     if (!message.success) {
-      span?.addTags({ error: 'not success' });
+      span?.setAttributes({ error: 'not success' });
     }
 
     this.debug(
@@ -571,7 +572,7 @@ export class RaftServer {
     if (this.term < message.term) {
       const logMessage = `Incoming term (${message.term}) is higher than my term (${this.term}), stepping down`;
       this.debug(logMessage);
-      span?.log({ message: logMessage });
+      span.addEvent('stepping-down', { incomingTerm: message.term, myTerm: this.term });
       this.stepDown(span, message.term);
     }
 
@@ -593,14 +594,10 @@ export class RaftServer {
       // If peer.nextIndex <= this.log.length, call `sendAppendEntriesMessage` now,
       // If not, we're gonna wait for heartbeat timeout
       if (peer.nextIndex <= this.log.length) {
-        span?.log({
-          message: `Peer has still missing logs, re-sending append entries`,
-        });
+        span?.addEvent('logs-missing-resending');
         this.sendAppendEntriesMessage(span, peerId);
       } else {
-        span?.log({
-          message: `Peer's log is up to date, setting a heartbeat timeout`,
-        });
+        span?.addEvent('logs-up-to-date');
         clearTimeout(peer.heartbeatTimeoutId);
         peer.heartbeatTimeoutId = setTimeout(() => {
           if (this.state == RaftServerState.STOPPED) return;
@@ -611,19 +608,19 @@ export class RaftServer {
       }
     }
 
-    span?.finish();
+    span?.end();
   }
 
   // Can be in 4 states
   private handleMessageTimeout(message: RaftMessage) {
     const span = this.rpcSpans[message.id];
     delete this.rpcSpans[message.id];
-    span?.addTags({ error: 'timeout' });
+    span?.setAttributes({ error: 'timeout' });
 
     this.debug(`Message timeout`, message);
 
     if (this.state == RaftServerState.STOPPED) {
-      span?.finish();
+      span?.end();
       return;
     }
 
@@ -633,17 +630,15 @@ export class RaftServer {
       message.type == 'AppendEntriesResponse' ||
       message.type == 'RequestVoteResponse'
     ) {
-      span?.log({
-        message: `Timeout, but message type is "${message.type}", noop`,
-      });
-      span?.finish();
+      span?.addEvent('timeout', { messageType: message.type });
+      span?.end();
       return;
     }
 
     // Maybe new term has began (election timeout). If so, we don't want to retry again
     if (message.term != this.term) {
-      span?.log({ message: `Timeout, but term is changed, noop` });
-      span?.finish();
+      span?.addEvent('timeout', { termChanged: true, noop: true });
+      span?.end();
       return;
     }
 
@@ -653,8 +648,8 @@ export class RaftServer {
       message.type == 'RequestVote' &&
       this.state == RaftServerState.CANDIDATE
     ) {
-      span?.log({ message: `Timeout, resending` });
-      span?.finish();
+      span?.addEvent('timeout', {resending: true});
+      span?.end();
       // this.debug(`Timeout for sending ${message.type} message to ${message.to}, retrying...`, message);
       this.sendRequestVoteMessage(span, message.to);
       return;
@@ -666,8 +661,8 @@ export class RaftServer {
       message.type == 'AppendEntries' &&
       this.state == RaftServerState.LEADER
     ) {
-      span?.log({ message: `Timeout, resending` });
-      span?.finish();
+      span?.addEvent('timeout', {resending: true});
+      span?.end();
       // this.debug(`Timeout for sending ${message.type} message to ${message.to}, retrying...`, message);
       this.sendAppendEntriesMessage(span, message.to);
       return;
@@ -725,7 +720,7 @@ export class RaftServer {
       clearTimeout(peer.heartbeatTimeoutId);
     });
 
-    span.finish();
+    span.end();
     this.ee.emit(RaftServerEvents.STOPPED);
   }
 
@@ -739,13 +734,13 @@ export class RaftServer {
     this.state = RaftServerState.FOLLOWER;
     this.reloadElectionTimeout(span);
 
-    span.finish();
+    span.end();
     this.ee.emit(RaftServerEvents.STARTED);
   }
 
   request(value: string) {
     const span = this.tracer.startSpan('request', {});
-    span.addTags({
+    span.setAttributes({
       ...this.dumpState(),
       value,
     });
@@ -755,16 +750,16 @@ export class RaftServer {
       value,
     });
 
-    span.finish();
+    span.end();
     this.ee.emit(RaftServerEvents.LOG_REQUESTED);
   }
 
   forceTriggerElection() {
     const span = this.tracer.startSpan('forceTriggerElection', {});
-    span.addTags({ ...this.dumpState() });
+    span.setAttributes({ ...this.dumpState() });
 
     this.handleElectionTimeout(span);
-    span.finish();
+    span.end();
   }
 }
 

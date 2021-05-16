@@ -3,7 +3,6 @@ import { Button, Space, Modal, Slider, Row, Col, Dropdown, Menu } from 'antd';
 import FlashChange from '@avinlab/react-flash-change';
 import times from 'lodash/times';
 import { CLUSTER } from '../globals/cluster';
-import { SESSION_ID } from '../globals/session-id';
 import {
   RaftServerState,
   RaftServerEvents,
@@ -295,11 +294,6 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
             padding: '0.5em',
           }}
         >
-          <div
-            style={{ textAlign: 'center', color: '#ddd', fontSize: '0.8em' }}
-          >
-            Session ID: {SESSION_ID}
-          </div>
           <div style={{ textAlign: 'center' }}>
             <Button
               type="link"
