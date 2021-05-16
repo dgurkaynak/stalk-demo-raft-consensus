@@ -114,17 +114,15 @@ export class RaftServer {
 
   constructor(id: string) {
     this.id = id;
-    this.tracer = USE_NOOP_TRACER
-      ? new opentracing.Tracer()
-      : new Tracer({
-          process: {
-            serviceName: 'raft-server',
-            tags: {
-              name: this.id,
-              sessionId: SESSION_ID,
-            },
-          },
-        });
+    this.tracer = new Tracer({
+      process: {
+        serviceName: 'raft-server',
+        tags: {
+          name: this.id,
+          sessionId: SESSION_ID,
+        },
+      },
+    });
   }
 
   init(options: { peerServers: RaftServer[] }) {

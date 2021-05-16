@@ -9,7 +9,6 @@ const generateId = () =>
 
 export class Tracer extends opentracing.Tracer {
   private spanJSONs: any[] = [];
-  private reportTimeoutId: number;
 
   constructor(
     private options: {
@@ -20,7 +19,6 @@ export class Tracer extends opentracing.Tracer {
     }
   ) {
     super();
-    this.reportTimeoutId = setTimeout(() => this.onReportTick(), 1000) as any;
   }
 
   /**
@@ -32,37 +30,6 @@ export class Tracer extends opentracing.Tracer {
 
   handleSpanFinish(span: Span) {
     this.spanJSONs.push(span.toJSON());
-  }
-
-  private async onReportTick() {
-    const spansToReport = this.spanJSONs.slice();
-
-    if (spansToReport.length == 0) {
-      this.reportTimeoutId = setTimeout(() => this.onReportTick(), 1000) as any;
-      return;
-    }
-
-    try {
-      const response = await fetch(`http://${window.location.host}/spans`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          process: this.options.process,
-          spans: spansToReport,
-        }),
-      });
-
-      if (response.ok) {
-        spansToReport.forEach((s) => {
-          const index = this.spanJSONs.indexOf(s);
-          index > -1 && this.spanJSONs.splice(index, 1);
-        });
-      }
-    } catch (err) {
-      console.warn(`Could not send spans`, err);
-    }
-
-    this.reportTimeoutId = setTimeout(() => this.onReportTick(), 1000) as any;
   }
 
   ///////////////////////////////////////////

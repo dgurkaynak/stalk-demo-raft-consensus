@@ -11,12 +11,11 @@
     "email": "dgurkaynak@gmail.com",
     "url": "https://github.com/dgurkaynak"
   },
-  "main": "dist/backend.js",
+  "main": "",
   "scripts": {
     "build": "webpack --mode production",
     "build:watch": "webpack --mode development --watch",
     "format": "prettier --write \"frontend/**/*.ts\"",
-    "start:backend": "node dist/backend.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "devDependencies": {
@@ -26,10 +25,7 @@
     "@types/chance": "^1.0.10",
     "@types/debug": "^4.1.5",
     "@types/events": "^3.0.0",
-    "@types/express": "^4.17.6",
     "@types/lodash": "^4.14.149",
-    "@types/node-fetch": "^2.5.7",
-    "@types/object-hash": "^1.3.1",
     "@types/react": "^16.9.34",
     "@types/react-dom": "^16.9.6",
     "animate.css": "^4.0.0",
@@ -47,15 +43,9 @@
     "ts-loader": "^7.0.0",
     "typescript": "^3.8.3",
     "webpack": "^4.42.1",
-    "webpack-cli": "^3.3.11",
-    "webpack-node-externals": "^1.7.2"
+    "webpack-cli": "^3.3.11"
   },
   "dependencies": {
-    "body-parser": "^1.19.0",
-    "dotenv": "^8.2.0",
-    "express": "^4.17.1",
-    "node-fetch": "^2.6.1",
-    "object-hash": "^2.0.3",
     "opentracing": "^0.14.4"
   }
 }
