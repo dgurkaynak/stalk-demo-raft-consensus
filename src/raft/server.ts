@@ -1,9 +1,24 @@
 import debug from 'debug';
 import { EventEmitter } from 'events';
 import * as opentelemetry from '@opentelemetry/api';
-import { BasicTracerProvider, ConsoleSpanExporter, SimpleSpanProcessor, BatchSpanProcessor } from '@opentelemetry/tracing';
+import {
+  BasicTracerProvider,
+  ConsoleSpanExporter,
+  SimpleSpanProcessor,
+  BatchSpanProcessor,
+} from '@opentelemetry/tracing';
 import { CollectorTraceExporter } from '@opentelemetry/exporter-collector';
 import cfg from '../globals/server-config';
+import {
+  RaftServerState,
+  RaftServerEvents,
+  RaftLogItem,
+  RaftMessage,
+  RequestVoteMessage,
+  RequestVoteResponseMessage,
+  AppendEntriesMessage,
+  AppendEntriesResponseMessage,
+} from './interfaces';
 
 // Setup tracing
 const provider = new BasicTracerProvider();
@@ -26,81 +41,7 @@ provider.addSpanProcessor(new SimpleSpanProcessor(new ConsoleSpanExporter()));
 // }));
 provider.register();
 
-export enum RaftServerState {
-  FOLLOWER = 'follower',
-  CANDIDATE = 'candidate',
-  LEADER = 'leader',
-  STOPPED = 'stopped',
-}
-
-export enum RaftServerEvents {
-  SENT_MESSAGE = 'sent message',
-  CLEARED_ELECTION_TIMEOUT = 'cleared election timeout',
-  SET_ELECTION_TIMEOUT = 'set election timeout',
-  STARTED_NEW_ELECTION = 'started new election',
-  STEPPED_DOWN = 'stepped down',
-  VOTED = 'voted',
-  RECIEVED_VOTE = 'recieved vote',
-  BECAME_LEADER = 'became leader',
-  RECIEVED_APPEND_ENTRIES = 'recieved append entries',
-  STARTED = 'started',
-  STOPPED = 'stopped',
-  LOG_REQUESTED = 'log requested',
-}
-
-export interface RaftLogItem {
-  term: number;
-  value: string;
-}
-
-export type RaftMessage =
-  | RequestVoteMessage
-  | RequestVoteResponseMessage
-  | AppendEntriesMessage
-  | AppendEntriesResponseMessage;
-
-export interface RequestVoteMessage {
-  id: string;
-  from: string;
-  to: string;
-  term: number;
-  type: 'RequestVote';
-  lastLogTerm: number;
-  lastLogIndex: number;
-}
-
-export interface RequestVoteResponseMessage {
-  id: string;
-  from: string;
-  to: string;
-  term: number;
-  type: 'RequestVoteResponse';
-  granted: boolean;
-}
-
-export interface AppendEntriesMessage {
-  id: string;
-  from: string;
-  to: string;
-  term: number;
-  type: 'AppendEntries';
-  prevIndex: number;
-  prevTerm: number;
-  entries: RaftLogItem[];
-  commitIndex: number;
-}
-
-export interface AppendEntriesResponseMessage {
-  id: string;
-  from: string;
-  to: string;
-  term: number;
-  type: 'AppendEntriesResponse';
-  success: boolean;
-  matchIndex: number;
-}
-
-export interface ServerPeer {
+interface ServerPeer {
   server: RaftServer;
   voteGranted: boolean;
   matchIndex: number;
@@ -240,7 +181,10 @@ export class RaftServer {
       this.state == RaftServerState.CANDIDATE ||
       this.state == RaftServerState.FOLLOWER
     ) {
-      const ctx = opentelemetry.setSpan(opentelemetry.context.active(), parentSpan);
+      const ctx = opentelemetry.setSpan(
+        opentelemetry.context.active(),
+        parentSpan
+      );
       const span = this.tracer.startSpan('startNewElection', {}, ctx); // TODO: Handle doesFollowFrom == true
       span.setAttributes({ ...this.dumpState() });
       this.debug(`Election timeout, starting a new one...`);
@@ -289,11 +233,12 @@ export class RaftServer {
   }
 
   // TODO: parentSpan can be null
-  private sendRequestVoteMessage(parentSpan: opentelemetry.Span, peerId: string) {
+  private sendRequestVoteMessage(
+    parentSpan: opentelemetry.Span,
+    peerId: string
+  ) {
     const span = this.tracer.startSpan('requestVote', {
-      links: [
-        { context: parentSpan.context() }
-      ],
+      links: [{ context: parentSpan.context() }],
     });
 
     const message: RequestVoteMessage = {
@@ -321,7 +266,10 @@ export class RaftServer {
 
   // Can be in 3 states
   private handleRequestVoteMessage(message: RequestVoteMessage) {
-    const ctx = opentelemetry.propagation.extract(opentelemetry.context.active(), message);
+    const ctx = opentelemetry.propagation.extract(
+      opentelemetry.context.active(),
+      message
+    );
     const span = this.tracer.startSpan('handleRequestVote', {}, ctx);
     span.setAttributes({
       ...this.dumpState(),
@@ -338,7 +286,10 @@ export class RaftServer {
     if (this.term < message.term) {
       const logMessage = `Incoming term (${message.term}) is higher than my term (${this.term}), stepping down`;
       this.debug(logMessage);
-      span.addEvent('stepping-down', { incomingTerm: message.term, myTerm: this.term });
+      span.addEvent('stepping-down', {
+        incomingTerm: message.term,
+        myTerm: this.term,
+      });
       this.stepDown(span, message.term);
     }
 
@@ -353,7 +304,7 @@ export class RaftServer {
     ) {
       const logMessage = `Voted for ${message.from}`;
       this.debug(logMessage);
-      span.addEvent('voted', {for: message.from});
+      span.addEvent('voted', { for: message.from });
 
       granted = true;
       this.votedFor = message.from;
@@ -372,7 +323,7 @@ export class RaftServer {
     };
     this.sendMessage(response);
 
-    span.setAttributes({granted});
+    span.setAttributes({ granted });
     setTimeout(() => span.end(), 25);
   }
 
@@ -386,7 +337,7 @@ export class RaftServer {
       'response.granted': message.granted,
     });
     if (!message.granted) {
-      span?.setAttributes({error: 'not granted'});
+      span?.setAttributes({ error: 'not granted' });
     }
 
     this.debug(
@@ -397,7 +348,10 @@ export class RaftServer {
     if (this.term < message.term) {
       const logMessage = `Incoming term (${message.term}) is higher than my term (${this.term}), stepping down`;
       this.debug(logMessage);
-      span.addEvent('stepping-down', { incomingTerm: message.term, myTerm: this.term });
+      span.addEvent('stepping-down', {
+        incomingTerm: message.term,
+        myTerm: this.term,
+      });
       this.stepDown(span, message.term);
     }
 
@@ -480,7 +434,10 @@ export class RaftServer {
     let success = false;
     let matchIndex = 0;
 
-    const ctx = opentelemetry.propagation.extract(opentelemetry.context.active(), message);
+    const ctx = opentelemetry.propagation.extract(
+      opentelemetry.context.active(),
+      message
+    );
     const span = this.tracer.startSpan('handleAppendEntries', {}, ctx);
     span.setAttributes({
       ...this.dumpState(),
@@ -498,7 +455,10 @@ export class RaftServer {
     if (this.term < message.term) {
       const logMessage = `Incoming term (${message.term}) is higher than my term (${this.term}), stepping down`;
       this.debug(logMessage);
-      span.addEvent('stepping-down', { incomingTerm: message.term, myTerm: this.term });
+      span.addEvent('stepping-down', {
+        incomingTerm: message.term,
+        myTerm: this.term,
+      });
       this.stepDown(span, message.term);
     }
 
@@ -572,7 +532,10 @@ export class RaftServer {
     if (this.term < message.term) {
       const logMessage = `Incoming term (${message.term}) is higher than my term (${this.term}), stepping down`;
       this.debug(logMessage);
-      span.addEvent('stepping-down', { incomingTerm: message.term, myTerm: this.term });
+      span.addEvent('stepping-down', {
+        incomingTerm: message.term,
+        myTerm: this.term,
+      });
       this.stepDown(span, message.term);
     }
 
@@ -648,7 +611,7 @@ export class RaftServer {
       message.type == 'RequestVote' &&
       this.state == RaftServerState.CANDIDATE
     ) {
-      span?.addEvent('timeout', {resending: true});
+      span?.addEvent('timeout', { resending: true });
       span?.end();
       // this.debug(`Timeout for sending ${message.type} message to ${message.to}, retrying...`, message);
       this.sendRequestVoteMessage(span, message.to);
@@ -661,7 +624,7 @@ export class RaftServer {
       message.type == 'AppendEntries' &&
       this.state == RaftServerState.LEADER
     ) {
-      span?.addEvent('timeout', {resending: true});
+      span?.addEvent('timeout', { resending: true });
       span?.end();
       // this.debug(`Timeout for sending ${message.type} message to ${message.to}, retrying...`, message);
       this.sendAppendEntriesMessage(span, message.to);

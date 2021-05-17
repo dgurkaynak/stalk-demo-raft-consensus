@@ -1,6 +1,6 @@
 import React from 'react';
 import forEachRight from 'lodash/forEachRight';
-import { RaftServerEvents, RaftMessage } from '../raft/server';
+import { RaftServerEvents, RaftMessage } from '../raft/interfaces';
 import { CLUSTER } from '../globals/cluster';
 
 const MESSAGE_DIAMETER = 16;

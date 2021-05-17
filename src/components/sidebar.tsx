@@ -3,12 +3,12 @@ import { Button, Space, Modal, Slider, Row, Col, Dropdown, Menu } from 'antd';
 import FlashChange from '@avinlab/react-flash-change';
 import times from 'lodash/times';
 import { CLUSTER } from '../globals/cluster';
+import { RaftServer } from '../raft/server';
 import {
   RaftServerState,
   RaftServerEvents,
   RaftLogItem,
-  RaftServer,
-} from '../raft/server';
+} from '../raft/interfaces';
 import { SettingOutlined, DownOutlined } from '@ant-design/icons';
 import cfg, { getDefaults, getRealistic } from '../globals/server-config';
 
