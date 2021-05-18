@@ -20,20 +20,9 @@ export class RaftCluster {
       if (names.indexOf(name) == -1) names.push(name);
     }
 
-    this.servers = times(
-      options.numberOfServers,
-      (i) => new RaftServer(names[i])
-    );
-
-    this.servers.forEach((server) => {
-      const otherServers = this.servers.filter((s) => s != server);
-      server.init({
-        peerServers: otherServers,
-      });
+    this.servers = times(options.numberOfServers, (i) => {
+      const peerIds = names.filter((name) => name != names[i]);
+      return new RaftServer(names[i], peerIds);
     });
-  }
-
-  start() {
-    this.servers.forEach((s) => s.start());
   }
 }
