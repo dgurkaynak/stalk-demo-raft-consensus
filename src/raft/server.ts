@@ -94,7 +94,7 @@ export class RaftServer {
     this.peers = peersMap;
   }
 
-  sendMessage(message: RaftMessage, timeout = 0) {
+  private sendMessage(message: RaftMessage, timeout = 0) {
     const peer = this.peers.get(message.to);
     if (!peer) return;
 
@@ -115,7 +115,7 @@ export class RaftServer {
   }
 
   // Can be in 4 states
-  handleMessage(message: RaftMessage) {
+  private handleMessage(message: RaftMessage) {
     clearTimeout(this.rpcTimeoutIds[message.id]);
     delete this.rpcTimeoutIds[message.id];
 
