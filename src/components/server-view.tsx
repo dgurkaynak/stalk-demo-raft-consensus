@@ -7,7 +7,7 @@ import {
 } from '@ant-design/icons';
 import FlashChange from '@avinlab/react-flash-change';
 import { RaftServer } from '../raft/server';
-import { RaftServerEvents, RaftServerState } from '../raft/interfaces';
+import { RaftServerEvents, RaftServerState } from '../raft/raft-interfaces';
 import { ElectionProgressBar } from './election-progress-bar';
 
 export interface ServerViewProps {

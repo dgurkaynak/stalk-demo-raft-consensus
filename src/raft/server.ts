@@ -18,7 +18,7 @@ import {
   RequestVoteResponseMessage,
   AppendEntriesMessage,
   AppendEntriesResponseMessage,
-} from './interfaces';
+} from './raft-interfaces';
 
 // Setup tracing
 const provider = new BasicTracerProvider();
@@ -57,7 +57,7 @@ export class RaftServer {
   term = 1;
   votedFor: string;
   log: RaftLogItem[] = [];
-  commitIndex = 0;
+  private commitIndex = 0;
   peers = new Map<string, ServerPeer>();
 
   private rpcTimeoutIds: { [key: string]: number } = {};

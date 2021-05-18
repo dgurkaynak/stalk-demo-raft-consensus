@@ -8,7 +8,7 @@ import {
   RaftServerState,
   RaftServerEvents,
   RaftLogItem,
-} from '../raft/interfaces';
+} from '../raft/raft-interfaces';
 import { SettingOutlined, DownOutlined } from '@ant-design/icons';
 import cfg, { getDefaults, getRealistic } from '../globals/server-config';
 
