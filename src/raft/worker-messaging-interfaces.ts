@@ -9,5 +9,10 @@ export enum RaftServerWorkerMessageType {
   READY = 'ready', // worker -> ui
   STATE_UPDATE = 'stateUpdate', // worker -> ui
   MESSAGE_TO_PEER = 'messageToPeer', // worker -> ui
+  MESSAGE_FROM_PEER = 'messageFromPeer', // ui -> worker
   PROXY_EVENT = 'proxyEvent', // worker -> ui
+  STOP = 'stop', // ui -> worker
+  START = 'start', // ui -> worker
+  REQUEST = 'request', // ui -> worker
+  FORCE_TRIGGER_ELECTION = 'forceTriggerElectrion', // ui -> worker
 }

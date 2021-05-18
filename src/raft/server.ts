@@ -14,6 +14,7 @@ import {
   RaftServerWorkerMessage,
   RaftServerWorkerMessageType,
 } from './worker-messaging-interfaces';
+import { CLUSTER } from '../globals/cluster';
 
 interface PeerRaftServer {
   id: string;
@@ -36,22 +37,20 @@ export class RaftServer {
   term = 1;
   votedFor: string;
   log: RaftLogItem[] = [];
-  peers = new Map<string, PeerRaftServer>();
+  peers: { [key: string]: PeerRaftServer } = {};
 
   constructor(id: string, peerIds: string[]) {
     this.id = id;
 
-    const peersMap = new Map<string, PeerRaftServer>();
     peerIds.forEach((peerId) => {
-      peersMap.set(peerId, {
+      this.peers[peerId] = {
         id: peerId,
         voteGranted: false,
         matchIndex: 0,
         nextIndex: 1,
         heartbeatTimeoutId: null,
-      });
+      };
     });
-    this.peers = peersMap;
 
     this.ready = new Promise((resolve, reject) => {
       this.readyHandlers = { resolve, reject };
@@ -66,8 +65,7 @@ export class RaftServer {
       const message = JSON.parse(event.data) as RaftServerWorkerMessage;
 
       if (message.type == RaftServerWorkerMessageType.LOADED) {
-        const peerIds: string[] = [];
-        this.peers.forEach((p) => peerIds.push(p.id));
+        const peerIds = Object.keys(this.peers);
 
         this.sendMessage({
           type: RaftServerWorkerMessageType.INIT,
@@ -80,28 +78,60 @@ export class RaftServer {
 
       if (message.type == RaftServerWorkerMessageType.READY) {
         this.readyHandlers.resolve();
-        console.log('ready bitch');
+        console.log('ready bitch'); // TODO: Sth?
+      }
+
+      if (message.type == RaftServerWorkerMessageType.PROXY_EVENT) {
+        this.ee.emit(message.payload.type, message.payload);
+      }
+
+      if (message.type == RaftServerWorkerMessageType.MESSAGE_TO_PEER) {
+        const targetId = message.payload.to;
+        const target = CLUSTER.servers.find((s) => s.id == targetId);
+        target?.sendMessage({
+          type: RaftServerWorkerMessageType.MESSAGE_FROM_PEER,
+          payload: message.payload,
+        });
+      }
+
+      if (message.type == RaftServerWorkerMessageType.STATE_UPDATE) {
+        this.state = message.payload.state;
+        this.term = message.payload.term;
+        this.votedFor = message.payload.votedFor;
+        this.log = message.payload.log;
+        this.peers = message.payload.peers;
       }
     });
   }
 
-  private sendMessage(message: RaftServerWorkerMessage) {
+  sendMessage(message: RaftServerWorkerMessage) {
     this.worker.postMessage(JSON.stringify(message));
   }
 
   stop() {
-    // TODO: Send stop event
+    this.sendMessage({
+      type: RaftServerWorkerMessageType.STOP,
+    });
   }
 
   start() {
-    // TODO: Send start event
+    this.sendMessage({
+      type: RaftServerWorkerMessageType.START,
+    });
   }
 
   request(value: string) {
-    // TODO: Send request event
+    this.sendMessage({
+      type: RaftServerWorkerMessageType.REQUEST,
+      payload: {
+        value,
+      },
+    });
   }
 
   forceTriggerElection() {
-    // TODO: Send force trigger election event
+    this.sendMessage({
+      type: RaftServerWorkerMessageType.FORCE_TRIGGER_ELECTION,
+    });
   }
 }

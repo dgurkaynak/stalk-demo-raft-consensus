@@ -164,9 +164,9 @@ export class ServerView extends React.Component<
       state: server.state,
       term: server.term,
       votedFor: server.votedFor,
-      peerCount: server.peers.size,
-      grantedPeerVoteCount: Array.from(server.peers).filter(
-        ([id, peer]) => peer.voteGranted
+      peerCount: Object.keys(server.peers).length,
+      grantedPeerVoteCount: Object.values(server.peers).filter(
+        (peer) => peer.voteGranted
       ).length,
     });
   }
