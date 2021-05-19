@@ -6,7 +6,7 @@ import {
   SimpleSpanProcessor,
   BatchSpanProcessor,
 } from '@opentelemetry/tracing';
-// import { CollectorTraceExporter } from '@opentelemetry/exporter-collector';
+import { CollectorTraceExporter } from '@opentelemetry/exporter-collector';
 import {
   RaftServerWorkerMessage,
   RaftServerWorkerMessageType,
@@ -30,29 +30,6 @@ interface PeerRaftServer {
   nextIndex: number;
   heartbeatTimeoutId: number;
 }
-
-// Setup tracing
-const provider = new BasicTracerProvider();
-provider.addSpanProcessor(new SimpleSpanProcessor(new ConsoleSpanExporter()));
-
-// const exporter = new CollectorTraceExporter({
-//   // serviceName: 'basic-service', // TODO
-//   // url: '<opentelemetry-collector-url>', // url is optional and can be omitted - default is http://localhost:55681/v1/trace
-//   headers: {}, // an optional object containing custom headers to be sent with each request
-//   concurrencyLimit: 10, // an optional limit on pending requests
-// });
-// provider.addSpanProcessor(new BatchSpanProcessor(exporter, {
-//   // The maximum queue size. After the size is reached spans are dropped.
-//   maxQueueSize: 100,
-//   // The maximum batch size of every export. It must be smaller or equal to maxQueueSize.
-//   maxExportBatchSize: 10,
-//   // The interval between two consecutive exports
-//   scheduledDelayMillis: 500,
-//   // How long the export can run before it is cancelled
-//   exportTimeoutMillis: 30000,
-// }));
-
-provider.register();
 
 // General variables
 let tracer: opentelemetry.Tracer;
@@ -127,7 +104,7 @@ function reloadElectionTimeout(parentSpan: opentelemetry.Span) {
     delay
   ) as any;
 
-  parentSpan.addEvent('election-timeout-reset', { timeout: delay });
+  parentSpan?.addEvent('election-timeout-reset', { timeout: delay });
   sendMessage({
     type: RaftServerWorkerMessageType.PROXY_EVENT,
     payload: {
@@ -140,7 +117,7 @@ function reloadElectionTimeout(parentSpan: opentelemetry.Span) {
 // Can be in 4 states
 function handleElectionTimeout(
   parentSpan: opentelemetry.Span,
-  doesFollowFrom = false // TODO: ???
+  doesFollowFrom = false
 ) {
   if (state == RaftServerState.STOPPED) {
     return;
@@ -155,7 +132,11 @@ function handleElectionTimeout(
       opentelemetry.context.active(),
       parentSpan
     );
-    const span = tracer.startSpan('startNewElection', {}, ctx); // TODO: Handle doesFollowFrom == true
+    const span = doesFollowFrom
+      ? tracer.startSpan('startNewElection', {
+          links: [{ context: ctx as any }],
+        })
+      : tracer.startSpan('startNewElection', {}, ctx);
     span.setAttributes({ ...dumpStateAsSpanAttributes() });
     debug(`Election timeout, starting a new one...`);
 
@@ -194,7 +175,6 @@ function handleElectionTimeout(
   }
 }
 
-// TODO: parentSpan can be null
 function stepDown(parentSpan: opentelemetry.Span, term_: number) {
   state = RaftServerState.FOLLOWER;
   term = term_;
@@ -214,13 +194,12 @@ function stepDown(parentSpan: opentelemetry.Span, term_: number) {
   // advanceCommitIndex();
 }
 
-// TODO: parentSpan can be null
 function sendRequestVoteMessage(
   parentSpan: opentelemetry.Span,
   peerId: string
 ) {
   const span = tracer.startSpan('requestVote', {
-    links: [{ context: parentSpan.context() }],
+    links: [{ context: parentSpan?.context() }],
   });
 
   const message: RequestVoteMessage = {
@@ -384,7 +363,6 @@ function handleRequestVoteResponse(message: RequestVoteResponseMessage) {
   span?.end();
 }
 
-// TODO: parentSpan can be null
 function sendAppendEntriesMessage(
   parentSpan: opentelemetry.Span,
   peerId: string
@@ -393,7 +371,7 @@ function sendAppendEntriesMessage(
   if (!peer) return;
 
   const span = tracer.startSpan('appendEntries', {
-    links: [{ context: parentSpan.context() }],
+    links: [{ context: parentSpan?.context() }],
   });
 
   const prevIndex = peer.nextIndex - 1;
@@ -759,6 +737,8 @@ self.addEventListener('message', (event) => {
       };
     });
 
+    setupTracing();
+
     sendMessage({ type: RaftServerWorkerMessageType.READY });
   }
 
@@ -832,6 +812,44 @@ function logTerm(log: RaftLogItem[], index: number = log.length) {
 
 function debug(message: string, ...args: any) {
   // console.log(`[${id}] ${message}`, args);
+}
+
+function setupTracing() {
+  const provider = new BasicTracerProvider();
+
+  ////////////////////////////////////
+  ///////// CONSOLE EXPORTER /////////
+  ////////////////////////////////////
+  // provider.addSpanProcessor(new SimpleSpanProcessor(new ConsoleSpanExporter()));
+
+  /////////////////////////////////////////////
+  ////////// OTEL-COLLECTOR EXPORTER //////////
+  /////////////////////////////////////////////
+  const exporter = new CollectorTraceExporter({
+    // url: '<opentelemetry-collector-url>', // url is optional and can be omitted - default is http://localhost:55681/v1/trace
+    serviceName: `raft-server`,
+    hostname: id,
+    attributes: {
+      // for jeager process: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/process.md#process
+      'process.executable.name': id,
+    },
+    // headers: {}, // an optional object containing custom headers to be sent with each request
+    concurrencyLimit: 10, // an optional limit on pending requests
+  });
+  provider.addSpanProcessor(
+    new BatchSpanProcessor(exporter, {
+      // The maximum queue size. After the size is reached spans are dropped.
+      maxQueueSize: 100,
+      // The maximum batch size of every export. It must be smaller or equal to maxQueueSize.
+      maxExportBatchSize: 10,
+      // The interval between two consecutive exports
+      scheduledDelayMillis: 500,
+      // How long the export can run before it is cancelled
+      exportTimeoutMillis: 30000,
+    })
+  );
+
+  provider.register();
 }
 
 sendMessage({ type: RaftServerWorkerMessageType.LOADED });

@@ -32,7 +32,6 @@ export class RaftServer {
   private readyHandlers: { resolve: Function; reject: Function };
   private worker: Worker;
 
-  // TODO: You need to sync these variables with worker's state
   state = RaftServerState.STOPPED;
   term = 1;
   votedFor: string;
@@ -78,7 +77,7 @@ export class RaftServer {
 
       if (message.type == RaftServerWorkerMessageType.READY) {
         this.readyHandlers.resolve();
-        console.log('ready bitch'); // TODO: Sth?
+        console.log(`[${this.id}] Ready`);
       }
 
       if (message.type == RaftServerWorkerMessageType.PROXY_EVENT) {
