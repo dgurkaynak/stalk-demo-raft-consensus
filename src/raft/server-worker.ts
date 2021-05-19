@@ -1,10 +1,11 @@
+import './opentelemetry-webworker-fix';
 import * as opentelemetry from '@opentelemetry/api';
-// import {
-//   BasicTracerProvider,
-//   ConsoleSpanExporter,
-//   SimpleSpanProcessor,
-//   BatchSpanProcessor,
-// } from '@opentelemetry/tracing';
+import {
+  BasicTracerProvider,
+  ConsoleSpanExporter,
+  SimpleSpanProcessor,
+  BatchSpanProcessor,
+} from '@opentelemetry/tracing';
 // import { CollectorTraceExporter } from '@opentelemetry/exporter-collector';
 import {
   RaftServerWorkerMessage,
@@ -31,8 +32,8 @@ interface PeerRaftServer {
 }
 
 // Setup tracing
-// const provider = new BasicTracerProvider();
-// provider.addSpanProcessor(new SimpleSpanProcessor(new ConsoleSpanExporter()));
+const provider = new BasicTracerProvider();
+provider.addSpanProcessor(new SimpleSpanProcessor(new ConsoleSpanExporter()));
 
 // const exporter = new CollectorTraceExporter({
 //   // serviceName: 'basic-service', // TODO
@@ -51,7 +52,7 @@ interface PeerRaftServer {
 //   exportTimeoutMillis: 30000,
 // }));
 
-// provider.register();
+provider.register();
 
 // General variables
 let tracer: opentelemetry.Tracer;
