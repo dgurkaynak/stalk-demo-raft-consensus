@@ -9,8 +9,7 @@ import {
   RaftServerEvents,
   RaftLogItem,
 } from '../raft/raft-interfaces';
-import { SettingOutlined, DownOutlined } from '@ant-design/icons';
-import cfg, { getDefaults, getRealistic } from '../globals/server-config';
+import cfg from '../globals/server-config';
 
 const styles: any = {
   verticalText: {
@@ -27,7 +26,6 @@ export interface SidebarState {
   logs: { [key: string]: RaftLogItem }[];
   turnedOnServerCount: number;
   turnedOffServerCount: number;
-  isSimulationSettingsVisible: boolean;
   simMessageDelayRange: [number, number];
   simRpcTimeout: number;
   simElectionTimeoutRange: [number, number];
@@ -41,17 +39,6 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
     updateLeader: this.updateLeader.bind(this),
     updateLogs: this.updateLogs.bind(this),
     updateTurnOnOffCounts: this.updateTurnOnOffCounts.bind(this),
-    onSimulationSettingsClicked: this.onSimulationSettingsClicked.bind(this),
-    onSimulationSettingsModalOk: this.onSimulationSettingsModalOk.bind(this),
-    onSimulationSettingsModalCancel: this.onSimulationSettingsModalCancel.bind(
-      this
-    ),
-    onMessageDelaySliderChange: this.onMessageDelaySliderChange.bind(this),
-    onRpcTimeoutSliderChange: this.onRpcTimeoutSliderChange.bind(this),
-    onElectionTimeoutSliderChange: this.onElectionTimeoutSliderChange.bind(
-      this
-    ),
-    onHeartbeatSliderChange: this.onHeartbeatSliderChange.bind(this),
   };
 
   constructor(props: SidebarProps) {
@@ -62,7 +49,6 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
       logs: [],
       turnedOnServerCount: 0,
       turnedOffServerCount: CLUSTER.servers.length,
-      isSimulationSettingsVisible: false,
       simMessageDelayRange: [cfg.MIN_MESSAGE_DELAY, cfg.MAX_MESSAGE_DELAY],
       simRpcTimeout: cfg.RPC_TIMEOUT,
       simElectionTimeoutRange: [
@@ -205,76 +191,6 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
     server?.request(emoji);
   }
 
-  onSimulationSettingsClicked() {
-    this.setState({ isSimulationSettingsVisible: true });
-  }
-
-  onSimulationSettingsModalOk() {
-    cfg.MIN_MESSAGE_DELAY = this.state.simMessageDelayRange[0];
-    cfg.MAX_MESSAGE_DELAY = this.state.simMessageDelayRange[1];
-    cfg.RPC_TIMEOUT = this.state.simRpcTimeout;
-    cfg.MIN_ELECTION_TIMEOUT = this.state.simElectionTimeoutRange[0];
-    cfg.MAX_ELECTION_TIMEOUT = this.state.simElectionTimeoutRange[1];
-    cfg.HEARTBEAT_INTERVAL = this.state.simHeartbeatInterval;
-
-    this.setState({
-      isSimulationSettingsVisible: false,
-      simMessageDelayRange: [cfg.MIN_MESSAGE_DELAY, cfg.MAX_MESSAGE_DELAY],
-      simRpcTimeout: cfg.RPC_TIMEOUT,
-      simElectionTimeoutRange: [
-        cfg.MIN_ELECTION_TIMEOUT,
-        cfg.MAX_ELECTION_TIMEOUT,
-      ],
-      simHeartbeatInterval: cfg.HEARTBEAT_INTERVAL,
-    });
-  }
-
-  onSimulationSettingsModalCancel() {
-    this.setState({
-      isSimulationSettingsVisible: false,
-      simMessageDelayRange: [cfg.MIN_MESSAGE_DELAY, cfg.MAX_MESSAGE_DELAY],
-      simRpcTimeout: cfg.RPC_TIMEOUT,
-      simElectionTimeoutRange: [
-        cfg.MIN_ELECTION_TIMEOUT,
-        cfg.MAX_ELECTION_TIMEOUT,
-      ],
-      simHeartbeatInterval: cfg.HEARTBEAT_INTERVAL,
-    });
-  }
-
-  onMessageDelaySliderChange(range: [number, number]) {
-    this.setState({ simMessageDelayRange: range });
-  }
-
-  onRpcTimeoutSliderChange(val: number) {
-    this.setState({ simRpcTimeout: val });
-  }
-
-  onElectionTimeoutSliderChange(range: [number, number]) {
-    this.setState({ simElectionTimeoutRange: range });
-  }
-
-  onHeartbeatSliderChange(val: number) {
-    this.setState({ simHeartbeatInterval: val });
-  }
-
-  onPresetDropdownClick(preset: 'default' | 'realistic') {
-    const presetCfg = preset == 'realistic' ? getRealistic() : getDefaults();
-
-    this.setState({
-      simMessageDelayRange: [
-        presetCfg.MIN_MESSAGE_DELAY,
-        presetCfg.MAX_MESSAGE_DELAY,
-      ],
-      simRpcTimeout: presetCfg.RPC_TIMEOUT,
-      simElectionTimeoutRange: [
-        presetCfg.MIN_ELECTION_TIMEOUT,
-        presetCfg.MAX_ELECTION_TIMEOUT,
-      ],
-      simHeartbeatInterval: presetCfg.HEARTBEAT_INTERVAL,
-    });
-  }
-
   render() {
     const { style } = this.props;
     const {
@@ -294,17 +210,6 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
             padding: '0.5em',
           }}
         >
-          <div style={{ textAlign: 'center' }}>
-            <Button
-              type="link"
-              icon={<SettingOutlined />}
-              size="small"
-              disabled={turnedOffServerCount != CLUSTER.servers.length}
-              onClick={this.binded.onSimulationSettingsClicked}
-            >
-              Simulation Settings
-            </Button>
-          </div>
           <Button
             type="primary"
             block
@@ -323,9 +228,6 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
             Turn OFF All Servers
           </Button>
         </Space>
-
-        {/* Simulation settings modal */}
-        {this.renderSimulationSettingsModal()}
 
         {/* Leader section */}
         <div>
@@ -440,128 +342,4 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
       </div>
     );
   }
-
-  renderSimulationSettingsModal() {
-    const labelStyle = {
-      textAlign: 'right',
-      paddingRight: 15,
-    } as React.CSSProperties;
-    const valueStyle = {
-      paddingLeft: 15,
-    } as React.CSSProperties;
-
-    return (
-      <Modal
-        title="Simulation Settings"
-        visible={this.state.isSimulationSettingsVisible}
-        onOk={this.binded.onSimulationSettingsModalOk}
-        onCancel={this.binded.onSimulationSettingsModalCancel}
-        width={700}
-      >
-        <div style={{ textAlign: 'center', marginBottom: 15 }}>
-          <Dropdown
-            overlay={
-              <Menu>
-                <Menu.Item
-                  key="0"
-                  onClick={() => this.onPresetDropdownClick('default')}
-                >
-                  Slowed Down (Default)
-                </Menu.Item>
-                <Menu.Item
-                  key="1"
-                  onClick={() => this.onPresetDropdownClick('realistic')}
-                >
-                  Realistic
-                </Menu.Item>
-              </Menu>
-            }
-            placement="bottomCenter"
-          >
-            <a
-              className="ant-dropdown-link"
-              onClick={(e) => e.preventDefault()}
-            >
-              Presets <DownOutlined />
-            </a>
-          </Dropdown>
-        </div>
-
-        <Row align="middle">
-          <Col span={5} style={labelStyle}>
-            Message Delay:
-          </Col>
-          <Col span={14}>
-            <Slider
-              range
-              min={50}
-              max={1500}
-              value={this.state.simMessageDelayRange}
-              tipFormatter={sliderTipFormatter as any}
-              onChange={this.binded.onMessageDelaySliderChange}
-            />
-          </Col>
-          <Col span={5} style={valueStyle}>
-            {this.state.simMessageDelayRange.join('-')} ms
-          </Col>
-        </Row>
-        <Row align="middle">
-          <Col span={5} style={labelStyle}>
-            RPC Timeout:
-          </Col>
-          <Col span={14}>
-            <Slider
-              min={250}
-              max={5000}
-              value={this.state.simRpcTimeout}
-              tipFormatter={sliderTipFormatter as any}
-              onChange={this.binded.onRpcTimeoutSliderChange}
-            />
-          </Col>
-          <Col span={5} style={valueStyle}>
-            {this.state.simRpcTimeout} ms
-          </Col>
-        </Row>
-        <Row align="middle">
-          <Col span={5} style={labelStyle}>
-            Election Timeout:
-          </Col>
-          <Col span={14}>
-            <Slider
-              range
-              min={700}
-              max={20000}
-              value={this.state.simElectionTimeoutRange}
-              tipFormatter={sliderTipFormatter as any}
-              onChange={this.binded.onElectionTimeoutSliderChange}
-            />
-          </Col>
-          <Col span={5} style={valueStyle}>
-            {this.state.simElectionTimeoutRange.join('-')} ms
-          </Col>
-        </Row>
-        <Row align="middle">
-          <Col span={5} style={labelStyle}>
-            Heartbeat Interval:
-          </Col>
-          <Col span={14}>
-            <Slider
-              min={200}
-              max={3000}
-              value={this.state.simHeartbeatInterval}
-              tipFormatter={sliderTipFormatter as any}
-              onChange={this.binded.onHeartbeatSliderChange}
-            />
-          </Col>
-          <Col span={5} style={valueStyle}>
-            {this.state.simHeartbeatInterval} ms
-          </Col>
-        </Row>
-      </Modal>
-    );
-  }
-}
-
-function sliderTipFormatter(value: string) {
-  return `${value} ms`;
 }
