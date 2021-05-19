@@ -33,6 +33,8 @@ interface PeerRaftServer {
 
 // General variables
 let tracer: opentelemetry.Tracer;
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+const minSpanDuration = cfg.MIN_MESSAGE_DELAY;
 
 // Public state (exposed to UI)
 let state = RaftServerState.STOPPED;
@@ -115,7 +117,7 @@ function reloadElectionTimeout(parentSpan: opentelemetry.Span) {
 }
 
 // Can be in 4 states
-function handleElectionTimeout(
+async function handleElectionTimeout(
   parentSpan: opentelemetry.Span,
   doesFollowFrom = false
 ) {
@@ -169,6 +171,7 @@ function handleElectionTimeout(
       sendRequestVoteMessage(span, peer.id);
     });
 
+    await sleep(minSpanDuration); // make the span visually pleasing
     span.end();
 
     return;
@@ -226,7 +229,7 @@ function sendRequestVoteMessage(
 }
 
 // Can be in 3 states
-function handleRequestVoteMessage(message: RequestVoteMessage) {
+async function handleRequestVoteMessage(message: RequestVoteMessage) {
   const ctx = opentelemetry.propagation.extract(
     opentelemetry.context.active(),
     message
@@ -252,10 +255,6 @@ function handleRequestVoteMessage(message: RequestVoteMessage) {
   }
 
   let granted = false;
-  debug('eee', {
-    state,
-    term,
-  });
 
   if (
     term == message.term &&
@@ -292,7 +291,9 @@ function handleRequestVoteMessage(message: RequestVoteMessage) {
   sendMessageToPeer(response);
 
   span.setAttributes({ granted });
-  setTimeout(() => span.end(), 25);
+
+  await sleep(minSpanDuration); // make the span visually pleasing
+  span.end();
 }
 
 // Can be in 3 states
@@ -406,7 +407,7 @@ function sendAppendEntriesMessage(
 }
 
 // Can be in 3 states
-function handleAppendEntriesMessage(message: AppendEntriesMessage) {
+async function handleAppendEntriesMessage(message: AppendEntriesMessage) {
   let success = false;
   let matchIndex = 0;
 
@@ -486,7 +487,9 @@ function handleAppendEntriesMessage(message: AppendEntriesMessage) {
   sendMessageToPeer(response);
 
   span.setAttributes({ success, matchIndex });
-  setTimeout(() => span.end(), 50);
+
+  await sleep(minSpanDuration); // make the span visually pleasing
+  span.end();
 }
 
 // Can be in 3 states
@@ -638,7 +641,7 @@ function dumpStateAsSpanAttributes() {
 ////////////// PUBLIC METHODS //////////////
 ////////////////////////////////////////////
 
-function stop() {
+async function stop() {
   if (state == RaftServerState.STOPPED) {
     return;
   }
@@ -651,8 +654,6 @@ function stop() {
     clearTimeout(peer.heartbeatTimeoutId);
   });
 
-  span.end();
-
   sendStateUpdate();
   sendMessage({
     type: RaftServerWorkerMessageType.PROXY_EVENT,
@@ -660,9 +661,12 @@ function stop() {
       type: RaftServerEvents.STOPPED,
     },
   });
+
+  await sleep(minSpanDuration); // make the span visually pleasing
+  span.end();
 }
 
-function start() {
+async function start() {
   if (state != RaftServerState.STOPPED) {
     return;
   }
@@ -672,8 +676,6 @@ function start() {
   state = RaftServerState.FOLLOWER;
   reloadElectionTimeout(span);
 
-  span.end();
-
   sendStateUpdate();
   sendMessage({
     type: RaftServerWorkerMessageType.PROXY_EVENT,
@@ -681,9 +683,12 @@ function start() {
       type: RaftServerEvents.STARTED,
     },
   });
+
+  await sleep(minSpanDuration); // make the span visually pleasing
+  span.end();
 }
 
-function request(value: string) {
+async function request(value: string) {
   const span = tracer.startSpan('request', {});
   span.setAttributes({
     ...dumpStateAsSpanAttributes(),
@@ -695,8 +700,6 @@ function request(value: string) {
     value,
   });
 
-  span.end();
-
   sendStateUpdate();
   sendMessage({
     type: RaftServerWorkerMessageType.PROXY_EVENT,
@@ -704,13 +707,18 @@ function request(value: string) {
       type: RaftServerEvents.LOG_REQUESTED,
     },
   });
+
+  await sleep(minSpanDuration); // make the span visually pleasing
+  span.end();
 }
 
-function forceTriggerElection() {
+async function forceTriggerElection() {
   const span = tracer.startSpan('forceTriggerElection', {});
   span.setAttributes({ ...dumpStateAsSpanAttributes() });
 
   handleElectionTimeout(span);
+
+  await sleep(minSpanDuration); // make the span visually pleasing
   span.end();
 }
 
