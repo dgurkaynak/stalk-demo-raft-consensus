@@ -100,6 +100,11 @@ export class RaftServer {
         this.log = message.payload.log;
         this.peers = message.payload.peers;
       }
+
+      if (message.type == RaftServerWorkerMessageType.EXPORT_SPAN) {
+        const span = message.payload;
+        console.log('span exported', span);
+      }
     });
   }
 

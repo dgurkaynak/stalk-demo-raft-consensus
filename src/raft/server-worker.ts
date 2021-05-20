@@ -22,6 +22,7 @@ import {
   AppendEntriesMessage,
   AppendEntriesResponseMessage,
 } from './raft-interfaces';
+import { WorkerStalkSpanExporter } from './worker-stalk-span-exporter';
 
 interface PeerRaftServer {
   id: string;
@@ -33,7 +34,7 @@ interface PeerRaftServer {
 
 // General variables
 let tracer: opentelemetry.Tracer;
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const minSpanDuration = cfg.MIN_MESSAGE_DELAY;
 
 // Public state (exposed to UI)
@@ -833,28 +834,35 @@ function setupTracing() {
   /////////////////////////////////////////////
   ////////// OTEL-COLLECTOR EXPORTER //////////
   /////////////////////////////////////////////
-  const exporter = new CollectorTraceExporter({
-    // url: '<opentelemetry-collector-url>', // url is optional and can be omitted - default is http://localhost:55681/v1/trace
-    serviceName: `raft-server`,
-    hostname: id,
-    attributes: {
-      // for jeager process: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/process.md#process
-      'process.executable.name': id,
-    },
-    // headers: {}, // an optional object containing custom headers to be sent with each request
-    concurrencyLimit: 10, // an optional limit on pending requests
-  });
+  // const exporter = new CollectorTraceExporter({
+  //   // url: '<opentelemetry-collector-url>', // url is optional and can be omitted - default is http://localhost:55681/v1/trace
+  //   serviceName: `raft-server`,
+  //   hostname: id,
+  //   attributes: {
+  //     // for jeager process: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/process.md#process
+  //     'process.executable.name': id,
+  //   },
+  //   // headers: {}, // an optional object containing custom headers to be sent with each request
+  //   concurrencyLimit: 10, // an optional limit on pending requests
+  // });
+  // provider.addSpanProcessor(
+  //   new BatchSpanProcessor(exporter, {
+  //     // The maximum queue size. After the size is reached spans are dropped.
+  //     maxQueueSize: 100,
+  //     // The maximum batch size of every export. It must be smaller or equal to maxQueueSize.
+  //     maxExportBatchSize: 10,
+  //     // The interval between two consecutive exports
+  //     scheduledDelayMillis: 500,
+  //     // How long the export can run before it is cancelled
+  //     exportTimeoutMillis: 30000,
+  //   })
+  // );
+
+  /////////////////////////////////////////
+  ////////// STALK SPAN EXPORTER //////////
+  /////////////////////////////////////////
   provider.addSpanProcessor(
-    new BatchSpanProcessor(exporter, {
-      // The maximum queue size. After the size is reached spans are dropped.
-      maxQueueSize: 100,
-      // The maximum batch size of every export. It must be smaller or equal to maxQueueSize.
-      maxExportBatchSize: 10,
-      // The interval between two consecutive exports
-      scheduledDelayMillis: 500,
-      // How long the export can run before it is cancelled
-      exportTimeoutMillis: 30000,
-    })
+    new SimpleSpanProcessor(new WorkerStalkSpanExporter(id))
   );
 
   provider.register();

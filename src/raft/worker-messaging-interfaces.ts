@@ -15,4 +15,5 @@ export enum RaftServerWorkerMessageType {
   START = 'start', // ui -> worker
   REQUEST = 'request', // ui -> worker
   FORCE_TRIGGER_ELECTION = 'forceTriggerElectrion', // ui -> worker
+  EXPORT_SPAN = 'exportSpan', // worker -> ui
 }
