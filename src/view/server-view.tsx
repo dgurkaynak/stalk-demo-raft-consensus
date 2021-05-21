@@ -33,8 +33,6 @@ export class ServerView extends React.Component<
   binded = {
     onElectionTimeoutUpdated: this.onElectionTimeoutUpdated.bind(this),
     onServerStateUpdated: this.onServerStateUpdated.bind(this),
-    onTurnOnButtonClicked: this.onTurnOnButtonClicked.bind(this),
-    onTurnOffButtonClicked: this.onTurnOffButtonClicked.bind(this),
     onTriggerElectionButtonClicked: this.onTriggerElectionButtonClicked.bind(
       this
     ),
@@ -171,16 +169,6 @@ export class ServerView extends React.Component<
     });
   }
 
-  onTurnOnButtonClicked() {
-    const { server } = this.props;
-    server.start();
-  }
-
-  onTurnOffButtonClicked() {
-    const { server } = this.props;
-    server.stop();
-  }
-
   onPowerToggleClicked() {
     const { server } = this.props;
     if (server.state == RaftServerState.STOPPED) {
@@ -188,6 +176,13 @@ export class ServerView extends React.Component<
     } else {
       server.stop();
     }
+
+    window.Countly &&
+      window.Countly.add_event({
+        key: 'individual_server_power_toggle_clicked',
+        count: 1,
+        segmentation: {},
+      });
   }
 
   onTriggerElectionButtonClicked() {
@@ -198,6 +193,13 @@ export class ServerView extends React.Component<
     ) {
       server.forceTriggerElection();
     }
+
+    window.Countly &&
+      window.Countly.add_event({
+        key: 'individual_server_force_election_clicked',
+        count: 1,
+        segmentation: {},
+      });
   }
 
   render() {

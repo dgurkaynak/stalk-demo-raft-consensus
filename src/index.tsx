@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import { ClusterView } from './view/cluster-view';
 import { Sidebar } from './view/sidebar';
+import './countly';
 
 import 'antd/dist/antd.css';
 import 'animate.css/animate.min.css';
@@ -20,7 +21,7 @@ function App() {
           minWidth: 250,
           maxWidth: 250,
           maxHeight: '100vh',
-          overflowY: 'auto'
+          overflowY: 'auto',
         }}
       />
 
@@ -30,7 +31,7 @@ function App() {
           flexGrow: 1,
           background: '#f0f2f5',
           maxHeight: '100vh',
-          overflowY: 'auto'
+          overflowY: 'auto',
         }}
       />
     </div>
