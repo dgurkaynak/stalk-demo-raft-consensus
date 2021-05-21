@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { ClusterView } from './components/cluster-view';
-import { Sidebar } from './components/sidebar';
+import { ClusterView } from './view/cluster-view';
+import { Sidebar } from './view/sidebar';
 
 import 'antd/dist/antd.css';
 import 'animate.css/animate.min.css';
