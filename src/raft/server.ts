@@ -1,15 +1,5 @@
 import { EventEmitter } from 'events';
-import cfg from '../globals/server-config';
-import {
-  RaftServerState,
-  RaftServerEvents,
-  RaftLogItem,
-  RaftMessage,
-  RequestVoteMessage,
-  RequestVoteResponseMessage,
-  AppendEntriesMessage,
-  AppendEntriesResponseMessage,
-} from './raft-interfaces';
+import { RaftServerState, RaftLogItem } from './raft-interfaces';
 import {
   RaftServerWorkerMessage,
   RaftServerWorkerMessageType,

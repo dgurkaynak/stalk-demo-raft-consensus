@@ -1,5 +1,7 @@
 import React from 'react';
 import times from 'lodash/times';
+import { Button, Space } from 'antd';
+import { ExportOutlined } from '@ant-design/icons';
 import { ServerView } from './server-view';
 import { CLUSTER } from '../globals/cluster';
 import { MessagingView } from './messaging-view';
@@ -40,6 +42,8 @@ export interface ClusterViewState {
     pointY: number;
     angle: number;
   }[];
+  collectedTraceCount: number;
+  collectedSpanCount: number;
 }
 
 export class ClusterView extends React.Component<
@@ -56,6 +60,8 @@ export class ClusterView extends React.Component<
       center: { x: 0, y: 0 },
       circleRadius: 0,
       serverCoordinates: [],
+      collectedTraceCount: 0,
+      collectedSpanCount: 0,
     };
   }
 
@@ -264,6 +270,56 @@ export class ClusterView extends React.Component<
             />
           );
         })}
+
+        {/* Toolbar for collected traces */}
+        {this.renderTraceCollectionToolbar()}
+      </div>
+    );
+  }
+
+  renderTraceCollectionToolbar() {
+    const TOOLBAR_HEIGHT = 50;
+    const { collectedTraceCount, collectedSpanCount } = this.state;
+    const shouldShow = collectedTraceCount > 0;
+
+    return (
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: TOOLBAR_HEIGHT,
+          background: '#fff',
+          borderLeft: '1px solid rgb(240, 240, 240)',
+          transform: shouldShow ? 'translateY(0)' : `translateY(-${TOOLBAR_HEIGHT}px)`,
+          transition: 'transform 0.25s cubic-bezier(0.65, 0.05, 0.36, 1)',
+          display: 'flex',
+          alignItems: 'center',
+          padding: '0 1em',
+        }}
+      >
+        <div style={{ flexGrow: 1 }}>
+          Collected <strong>{collectedTraceCount}</strong> traces (
+          {collectedSpanCount} spans)
+        </div>
+        <Space direction="horizontal" style={{ padding: '0.5em' }}>
+          <Button
+            type="primary"
+            icon={<ExportOutlined />}
+            block
+            onClick={() => {}}
+          >
+            Open in Stalk
+          </Button>
+          <Button
+            block
+            danger
+            onClick={() => {}}
+          >
+            Discard all
+          </Button>
+        </Space>
       </div>
     );
   }

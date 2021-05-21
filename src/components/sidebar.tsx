@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Space, Modal, Slider, Row, Col, Dropdown, Menu } from 'antd';
+import { Button, Space } from 'antd';
 import FlashChange from '@avinlab/react-flash-change';
 import times from 'lodash/times';
 import { CLUSTER } from '../globals/cluster';
