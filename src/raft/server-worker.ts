@@ -103,7 +103,7 @@ function reloadElectionTimeout(parentSpan: opentelemetry.Span) {
     Math.random() * (cfg.MAX_ELECTION_TIMEOUT - cfg.MIN_ELECTION_TIMEOUT);
 
   electionTimeoutId = setTimeout(
-    () => handleElectionTimeout(parentSpan, true),
+    () => handleElectionTimeout(parentSpan),
     delay
   ) as any;
 
@@ -118,10 +118,7 @@ function reloadElectionTimeout(parentSpan: opentelemetry.Span) {
 }
 
 // Can be in 4 states
-async function handleElectionTimeout(
-  parentSpan: opentelemetry.Span,
-  doesFollowFrom = false
-) {
+async function handleElectionTimeout(parentSpan: opentelemetry.Span) {
   if (state == RaftServerState.STOPPED) {
     return;
   }
@@ -135,11 +132,7 @@ async function handleElectionTimeout(
       opentelemetry.context.active(),
       parentSpan
     );
-    const span = doesFollowFrom
-      ? tracer.startSpan('startNewElection', {
-          links: [{ context: ctx as any }],
-        })
-      : tracer.startSpan('startNewElection', {}, ctx);
+    const span = tracer.startSpan('startNewElection', {}, ctx);
     span.setAttributes({ ...dumpStateAsSpanAttributes() });
     debug(`Election timeout, starting a new one...`);
 
