@@ -62,12 +62,14 @@ export class WorkerStalkSpanExporter implements SpanExporter {
     const logs = span.events.map((event) => {
       return {
         timestamp: hrTimeToMilliseconds(event.time),
-        fields: event.attributes || {},
+        fields: {
+          ...event.attributes,
+          name: event.name
+        },
       };
     });
     const process = {
-      serviceName: `raft-server`,
-      id: this.id,
+      serviceName: `raft-server-${this.id}`,
       tags: {},
     };
 

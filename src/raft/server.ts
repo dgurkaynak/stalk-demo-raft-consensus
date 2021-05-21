@@ -5,6 +5,7 @@ import {
   RaftServerWorkerMessageType,
 } from './worker-messaging-interfaces';
 import { CLUSTER } from '../globals/cluster';
+import * as TraceCollector from '../globals/trace-collector';
 
 interface PeerRaftServer {
   id: string;
@@ -93,7 +94,7 @@ export class RaftServer {
 
       if (message.type == RaftServerWorkerMessageType.EXPORT_SPAN) {
         const span = message.payload;
-        console.log('span exported', span);
+        TraceCollector.addSpan(span);
       }
     });
   }

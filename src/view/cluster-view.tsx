@@ -5,6 +5,7 @@ import { ExportOutlined } from '@ant-design/icons';
 import { ServerView } from './server-view';
 import { CLUSTER } from '../globals/cluster';
 import { MessagingView } from './messaging-view';
+import * as TraceCollector from '../globals/trace-collector';
 
 const POINT_DIAMETER = 10;
 const SERVER_WIDTH = 190;
@@ -63,6 +64,13 @@ export class ClusterView extends React.Component<
       collectedTraceCount: 0,
       collectedSpanCount: 0,
     };
+
+    TraceCollector.onChange((traceCount, spanCount) => {
+      this.setState({
+        collectedTraceCount: traceCount,
+        collectedSpanCount: spanCount,
+      });
+    });
   }
 
   componentDidMount() {
@@ -292,7 +300,9 @@ export class ClusterView extends React.Component<
           height: TOOLBAR_HEIGHT,
           background: '#fff',
           borderLeft: '1px solid rgb(240, 240, 240)',
-          transform: shouldShow ? 'translateY(0)' : `translateY(-${TOOLBAR_HEIGHT}px)`,
+          transform: shouldShow
+            ? 'translateY(0)'
+            : `translateY(-${TOOLBAR_HEIGHT}px)`,
           transition: 'transform 0.25s cubic-bezier(0.65, 0.05, 0.36, 1)',
           display: 'flex',
           alignItems: 'center',
@@ -308,15 +318,11 @@ export class ClusterView extends React.Component<
             type="primary"
             icon={<ExportOutlined />}
             block
-            onClick={() => {}}
+            onClick={() => TraceCollector.exportToStalk()}
           >
             Open in Stalk
           </Button>
-          <Button
-            block
-            danger
-            onClick={() => {}}
-          >
+          <Button block danger onClick={() => TraceCollector.clear()}>
             Discard all
           </Button>
         </Space>
