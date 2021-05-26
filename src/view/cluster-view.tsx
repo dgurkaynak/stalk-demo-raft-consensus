@@ -6,6 +6,7 @@ import { ServerView } from './server-view';
 import { CLUSTER } from '../globals/cluster';
 import { MessagingView } from './messaging-view';
 import * as TraceCollector from '../globals/trace-collector';
+import GithubSvg from '../assets/github-icon.svg';
 
 const POINT_DIAMETER = 10;
 const SERVER_WIDTH = 190;
@@ -129,6 +130,14 @@ export class ClusterView extends React.Component<
           ...style,
         }}
       >
+        {/* Github Link */}
+        <div className="github-link-container">
+          <a href="https://github.com/dgurkaynak/stalk-demo-raft-consensus/" target="_blank">
+            <span className="svg-container" dangerouslySetInnerHTML={{__html: GithubSvg}} />
+            GitHub
+          </a>
+        </div>
+
         {/* Legend */}
         <div
           style={{

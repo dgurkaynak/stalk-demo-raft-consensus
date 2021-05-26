@@ -9,6 +9,7 @@ type ChangeListener = (traceCount: number, spanCount: number) => any;
 
 let traces: { [key: string]: SpanLike[] } = {};
 let listeners: ChangeListener[] = [];
+// const STALK_URL = 'http://localhost:8080/stalk'; // for local development
 const STALK_URL = 'https://deniz.co/stalk';
 let stalkWindow: Window;
 

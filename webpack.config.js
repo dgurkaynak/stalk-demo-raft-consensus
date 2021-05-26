@@ -16,25 +16,26 @@ module.exports = [
         },
         {
           test: /\.css$/,
-          use: [
-            'style-loader',
-            'css-loader',
-          ]
+          use: ['style-loader', 'css-loader'],
+        },
+        {
+          test: /\.(svg)$/i,
+          type: 'asset/source',
         },
       ],
     },
     resolve: {
-      extensions: [ '.tsx', '.ts', '.js' ],
+      extensions: ['.tsx', '.ts', '.js'],
     },
     plugins: [
       new HtmlWebpackPlugin({
         template: path.resolve(__dirname, 'src/index.html'),
-        hash: true
-      })
+        hash: true,
+      }),
     ],
     output: {
       filename: 'index.js',
       path: path.resolve(__dirname, 'dist'),
     },
-  }
+  },
 ];

@@ -6,3 +6,46 @@
 .green-background-color-flash.active {
   background-color: #eafe4e;
 }
+
+.github-link-container {
+  position: absolute;
+  left: 5px;
+  bottom: 5px;
+  z-index: 1;
+  opacity: 0.5;
+}
+
+.github-link-container a {
+  color: #000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 6px 13px 6px 8px;
+  border-radius: 20px;
+  margin-top: 5px;
+}
+
+.github-link-container .svg-container {
+  width: 30px;
+  height: 30px;
+  margin-right: 5px;
+}
+
+.github-link-container .svg-container svg {
+  width: 30px;
+  height: 30px;
+  fill: #000;
+}
+
+.github-link-container:hover {
+  opacity: 1;
+}
+
+.github-link-container:hover a {
+  color: #fff;
+  background-color: #000;
+}
+
+.github-link-container:hover svg {
+  fill: #fff;
+}
