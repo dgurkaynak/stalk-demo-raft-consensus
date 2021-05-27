@@ -1,49 +1,26 @@
 # stalk-demo-raft-consensus
 
-![Demo](./demo.gif)
+![Demo](./docs/readme-assets/demo.gif)
 
 This is a demo application, instrumented with OpenTracing API, which simulates *(a naive version of)* [Raft distributed consensus algorithm](https://en.wikipedia.org/wiki/Raft_(computer_science)). Heavily inspired by [ongardie/raftscope](https://github.com/ongardie/raftscope).
 
-It can send traces to Jaeger and Zipkin backends.
+Available on: https://deniz.co/raft-consensus/
 
-## Running on Docker
+You can export traces to [Stalk](https://github.com/dgurkaynak/stalk) with one click to visualize & inspect collected traces.
 
-#### Jaeger
+![A sample of collected traces](./docs/readme-assets/stalk-screenshot.png)
 
-```
-docker run \
-  --rm \
-  --publish 8080:8080 \
-  --env JAEGER_COLLECTOR="http://x.x.x.x:14268/api/traces" \
-  dgurkaynak/stalk-demo-raft-consensus:latest
-```
+# Building & Development
 
-#### Zipkin
+### Development
 
-```
-docker run \
-  --rm \
-  --publish 8080:8080 \
-  --env ZIPKIN_COLLECTOR="http://x.x.x.x:9411/api/v2/spans" \
-  dgurkaynak/stalk-demo-raft-consensus:latest
-```
-
-Then open up `http://localhost:8080` in your browser.
-
-> If your Jaeger or Zipkin backend is running on the docker host machine, you need to use special `host.docker.internal` hostname ([more info](https://docs.docker.com/docker-for-mac/networking/#use-cases-and-workarounds)). So, your collector url would be:
-> - For Jaeger: `http://host.docker.internal:14268/api/traces`
-> - For Zipkin: `http://host.docker.internal:9411/api/v2/spans`
-
-## Running from source
-
-You need to have `node.js >= 10` installed on your machine.
+You must have node.js >= 12 installed on your machine.
 
 - Clone the repo
-- Install dependencies `npm i`
-- Build `npm run build`
-- Start the server
-  - For Jaeger: `JAEGER_COLLECTOR="http://x.x.x.x:14268/api/traces" npm run start:backend`
-  - For Zipkin: `ZIPKIN_COLLECTOR="http://x.x.x.x:9411/api/v2/spans" npm run start:backend`
-- Open up `http://localhost:8080` in your browser
+- Install dependencies: `npm i`
+- Get started with webpack-dev-server w/ live-reload: `npm start`
 
-> If you don't want to trace reporting stuff, and just want to play with raft consensus simulation: use `USE_NOOP_TRACER=true npm run build` env variable when building. This forces frontend code to use NOOP tracer. Then backend becomes useless, you can directly open up `dist/index.html` file in your browser.
+### Building
+
+- Build the project in production mode: `npm run build`
+- Check out `/dist` folder for output
