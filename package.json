@@ -1,6 +1,6 @@
 {
   "name": "stalk-demo-raft-consensus",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Raft Consensus - Log Replication",
   "homepage": "https://github.com/dgurkaynak/stalk-demo-raft-consensus",
   "repository": "github:dgurkaynak/stalk-demo-raft-consensus",
