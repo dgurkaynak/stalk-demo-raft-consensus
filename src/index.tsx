@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import { ClusterView } from './view/cluster-view';
 import { Sidebar } from './view/sidebar';
-import './countly';
+import './olay';
 
 import 'antd/dist/antd.css';
 import 'animate.css/animate.min.css';

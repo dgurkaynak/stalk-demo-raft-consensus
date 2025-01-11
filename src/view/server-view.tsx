@@ -177,12 +177,7 @@ export class ServerView extends React.Component<
       server.stop();
     }
 
-    window.Countly &&
-      window.Countly.add_event({
-        key: 'individual_server_power_toggle_clicked',
-        count: 1,
-        segmentation: {},
-      });
+    window.olay.addEvent('individual_server_power_toggle_clicked');
   }
 
   onTriggerElectionButtonClicked() {
@@ -194,12 +189,7 @@ export class ServerView extends React.Component<
       server.forceTriggerElection();
     }
 
-    window.Countly &&
-      window.Countly.add_event({
-        key: 'individual_server_force_election_clicked',
-        count: 1,
-        segmentation: {},
-      });
+    window.olay.addEvent('individual_server_force_election_clicked');
   }
 
   render() {

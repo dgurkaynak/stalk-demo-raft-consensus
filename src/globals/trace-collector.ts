@@ -23,12 +23,7 @@ export function clear() {
   traces = {};
   notifyListeners();
 
-  window.Countly &&
-    window.Countly.add_event({
-      key: 'discarded_all_traces',
-      count: 1,
-      segmentation: {},
-    });
+  window.olay.addEvent('discarded_all_traces');
 }
 
 export function onChange(listener: ChangeListener) {
@@ -64,12 +59,7 @@ export async function exportToStalk() {
   stalkWindow.postMessage(JSON.stringify(traces), '*');
   stalkWindow.focus();
 
-  window.Countly &&
-    window.Countly.add_event({
-      key: 'exported_to_stalk',
-      count: 1,
-      segmentation: {
-        traceCount: Object.keys(traces).length,
-      },
-    });
+  window.olay.addEvent('exported_to_stalk', {
+    traceCount: Object.keys(traces).length,
+  });
 }

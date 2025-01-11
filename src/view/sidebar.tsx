@@ -179,23 +179,13 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
   onTurnOnAllServersClicked() {
     CLUSTER.servers.forEach((s) => s.start());
 
-    window.Countly &&
-      window.Countly.add_event({
-        key: 'turned_on_all_servers',
-        count: 1,
-        segmentation: {},
-      });
+    window.olay.addEvent('turned_on_all_servers');
   }
 
   onTurnOffAllServersClicked() {
     CLUSTER.servers.forEach((s) => s.stop());
 
-    window.Countly &&
-      window.Countly.add_event({
-        key: 'turned_off_all_servers',
-        count: 1,
-        segmentation: {},
-      });
+    window.olay.addEvent('turned_off_all_servers');
   }
 
   onEmojiClick(emoji: string) {
@@ -204,12 +194,7 @@ export class Sidebar extends React.Component<SidebarProps, SidebarState> {
     const server = CLUSTER.servers.find((s) => s.id == leaderId);
     server?.request(emoji);
 
-    window.Countly &&
-      window.Countly.add_event({
-        key: 'appended_server_log',
-        count: 1,
-        segmentation: { emoji },
-      });
+    window.olay.addEvent('appended_server_log', { emoji });
   }
 
   render() {
